@@ -1,0 +1,41 @@
+<!-- login configuration type is a important parameter,the value must be one of(monitor,login,conn,dispatch,msg,loadbalance,broadcast)-->
+<login  type="login">
+	 <!-- IP/port the monitor is waiting for connections on -->
+	<monitor_ip>127.0.0.1</monitor_ip>
+	<monitor_port>8802</monitor_port>
+	<redis_ip>192.168.0.16</redis_ip>
+	<redis_port>6380</redis_port>
+    <redis_auth>ym1234</redis_auth>
+	
+	  <!-- IP and port to listen for incoming login connections on -->
+	<ip>127.0.0.1</ip>
+	<port>8020</port>
+	<!-- login will connect service -->
+	<conn_type>
+		<type>monitor</type>
+		<type>dispatch</type>
+		<type>conn</type>
+	</conn_type>
+
+	
+	<!-- login whether runing on backgroud ,the value is off/on -->
+	<daemon>on</daemon>
+		<!-- specify log level 
+	This should be one of
+	debug:1
+	trace:2
+	info:3
+	warn:4
+	error:5
+	//default debug
+	-->
+	<loglevel>1</loglevel>  
+	
+	<!-- other config-->
+	
+	<!--state broadcast-->
+	<state_ip>192.168.0.16</state_ip>
+	<state_port>6380</state_port>
+    <state_auth>ym1234</state_auth>
+</login>
+	

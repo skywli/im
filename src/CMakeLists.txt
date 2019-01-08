@@ -1,0 +1,13 @@
+
+ADD_SUBDIRECTORY(tools)
+ADD_SUBDIRECTORY(conn_server)
+ADD_SUBDIRECTORY(dispatch)
+ADD_SUBDIRECTORY(login_server)
+ADD_SUBDIRECTORY(monitor)
+ADD_SUBDIRECTORY(msg_server)
+#ADD_SUBDIRECTORY(broadcast)
+ADD_SUBDIRECTORY(loadbalance)
+ADD_SUBDIRECTORY(buddy_server)
+ADD_SUBDIRECTORY(group_server)
+ADD_SUBDIRECTORY(monitor/client)
+

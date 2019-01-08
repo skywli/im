@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package com.proto.state ;
+
+
+message UserStateBroadcast {
+    optional string    user_id = 1; 
+    optional int32    node_id = 2; 
+	optional int32    sockfd=3;
+	optional int32     state = 4;  
+	optional int64    time=5;  //state change time
+	optional int32      version=6;
+	optional int32     device_type=7;
+}
+
+//busi msg report state to login server
+message UserStateReport {
+    optional string    user_id = 1;  
+    optional int32    node_id = 2; 
+	optional bool     online = 3; 
+}

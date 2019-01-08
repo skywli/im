@@ -1,0 +1,289 @@
+syntax = "proto2";
+
+package com.proto.group ;
+import "IM.Basic.proto";
+
+
+//群基本信息
+message GroupItem{
+	required uint32                        group_id=1;            //群id
+	optional uint64                        info_update_time = 2;  //群资料最新的更新时间戳
+	optional com.proto.basic.GroupType     group_type=3;          //群类型
+}
+
+//群成员基本信息
+message GroupMemberItem{
+	required string    member_id = 1;        // 成员id
+	optional string    member_name=2;       //群成员昵称
+	required string    user_name=3;         //成员用户名
+	required uint32    member_role = 4;    //群成员角色(0-群主，1-管理员，2-普通成员) 
+}
+//群详细信息
+message GroupInfo{
+	required uint32                      group_id=1;             //群id
+	optional string                      group_name = 2;        //群名称
+	optional string                      owner_id = 3;          //群主id
+	optional string                      group_avatar = 4;      //头像
+	optional string                      topic =5 ;             //群公告
+	optional uint64                      info_update_time = 6;  //群资料最新的更新时间戳
+	optional uint32                      group_member_count=7;  //群成员数
+	optional bool                        invite_permission=8;   //邀请权限
+	optional com.proto.basic.GroupType   group_type=9;          //群类型
+}
+
+
+//==========================================================
+// 群操作
+//==========================================================
+
+//创建群
+message GroupCreateReq {
+//cmd id:	 CID_GROUP_CREATE_REQ
+    required string                            user_id = 1;       //创建者id
+    repeated GroupMemberItem                   member_list = 2;   //邀请添加用户
+	optional string                            group_name = 3;    //群名称
+	optional string                            group_avatar = 4;  //头像
+	optional string                            topic =5 ;         //群公告
+	optional com.proto.basic.GroupType         group_type=6;      //群类型
+}
+
+message GroupCreateRsp {
+//cmd id:	 CID_GROUP_CREATE_RSP
+    required uint32                          group_id = 1;             //群id
+    optional string                          user_id = 2;              //创建者id
+    repeated GroupMemberItem                 member_list = 3;          //成功添加用户
+	optional uint64                          update_time=4;            //群创建时间
+	optional com.proto.basic.GroupType       group_type=5;             //群类型
+	optional com.proto.basic.ResultCode      result=10;   
+}
+
+//解散群
+message GroupDissolveReq {
+//cmd id:	 CID_GROUP_DISSOLVE_REQ
+    required string                          user_id = 1;      //创建者id
+    required uint32                          group_id = 2;     //群id
+	optional com.proto.basic.GroupType       group_type=3;     //群类型
+}
+
+message GroupDissolveRsp {
+//cmd id:	 CID_GROUP_DISSOLVE_RSP
+    required uint32                         group_id = 1;    //群id
+	optional com.proto.basic.GroupType      group_type=2;    //群类型
+	optional com.proto.basic.ResultCode     result=10; 
+}
+
+// 创建群解散群通知
+message GroupOptNotify{
+	//cmd id:			CID_GROUP_OPT_NOTIFY
+	required uint32                      opt_type = 1;	  // 1-入群  0-解散群
+	required uint32                      group_id =2;     //群id
+	optional com.proto.basic.GroupType   group_type=3;    //群类型
+}
+
+
+enum GroupMemberOptType{
+	GROUP_MEMBER_OPT_ADD=1;   //加入群
+	GROUP_MEMBER_OPT_DEL=2;    //退出 移除群
+}
+
+// 添加/删除群成员请求
+message GroupMemberChangeReq {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_REQ
+	required string                               user_id=1;        //协议发起者  
+	required uint32                               group_id = 2;     //群id
+	repeated GroupMemberItem                      member_list = 3;  //需要添加或者删除的用户
+	required GroupMemberOptType                   type=4;          //操作类型
+	optional string                               remark=5;        //附加内容
+	optional string                               member_name=6;   //申请者昵称
+	optional com.proto.basic.GroupType            group_type=7;    //群类型
+}
+//添加/删除群成员响应
+message GroupMemberChangeRsp {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_RSP
+	required uint32                                 group_id = 1;       //群id
+	repeated GroupMemberItem                        member_list = 2;    //需要添加或者删除的用户
+	required GroupMemberOptType                     type=3;            //操作类型
+	optional uint64                                 update_time=4;     //修改时间
+	optional string                                 user_id=5;         //协议发起者  
+	optional string                                 member_name=6;     //申请者昵称
+	optional com.proto.basic.GroupType              group_type=7;      //群类型
+	optional com.proto.basic.ResultCode             result=10; 
+}
+//添加/删除群成员通知
+message GroupMemberChangeNotify {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_NOTIFY
+	required uint32                                   group_id = 1;       //群id
+	repeated GroupMemberItem                          member_list = 2;    //需要添加或者删除的用户
+	required GroupMemberOptType                       type=3;             //操作类型
+	optional uint64                                   update_time=4;                   
+	optional string                                   member_name=5;      //申请者昵称
+	optional com.proto.basic.GroupType                group_type=6;       //群类型
+}
+
+
+//不用
+message GroupMemberChangeTransferReq {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_TRANSFER_REQ
+	required string    src_user_id=1;
+	required uint32    group_id = 3;  
+    required string    dst_user_id=4;   
+	repeated GroupMemberItem  member_list = 5; 
+	required GroupMemberOptType   type=6;
+	optional string               remark=7;
+	optional string               src_member_name=8;
+}
+//不用
+message GroupMemberChangeTransferRsp {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_TRANSFER_RSP
+	required string                 src_user_id=1;  
+	
+	required uint32                 group_id = 2;  
+	required string                 dst_user_id=3;
+	repeated GroupMemberItem        member_list = 4; 
+	required GroupMemberOptType     type=5;
+	optional string                 dst_member_name=6;
+}
+
+// 服务端内部  修改群成员 GroupMemberChangeReq GroupMemberChangeTransferRsp dbproxy 都返回这个
+message S2SGroupMemberChangeRsp {
+//cmd id:	 S2S_GROUP_CHANGE_RSP
+	required string    src_user_id=1;
+	optional string    src_member_name=2;
+	required uint32    group_id = 3;  
+    required string    dst_user_id=4;   
+	repeated GroupMemberItem  member_list = 5; 
+	required GroupMemberOptType   type=6;
+	optional string               remark=7;
+	optional bool                 forward=8;  
+	optional uint64               update_time=9;
+	optional com.proto.basic.ResultCode    result=10; 
+}
+
+
+//获取群列表  拉取条件：点击群组图标拉取 （先用本地数据展示，再后台更新）
+message GroupListReq {
+//cmd id:	 CID_GROUP_LIST_REQ
+	required string    user_id=1;          
+	repeated GroupItem group_item_list=2; //用于群资料，群成员同步，客户端上传本地每个群时间戳
+}
+
+message GroupListRsp {
+//cmd id:	 CID_GROUP_LIST_RSP
+	repeated GroupInfo                       group_info_list = 1;     //变更的群列表
+	repeated uint32                          delete_group_id_list=2;  //应该删除的群
+	optional com.proto.basic.ResultCode      result=10; 
+}
+
+//获取群成员  拉取条件：点击成员列表图标拉取
+message GroupMemberReq {
+//cmd id:			CID_GROUP_MEMBER_REQ
+	required uint32                             group_id=1;        //群id
+	required string                             user_id=2;         //用户id
+	optional uint64                             update_time = 3;   //群成员版本
+	optional com.proto.basic.GroupType          group_type=4;      //群类型
+}
+
+message GroupMemberRsp {
+//cmd id:			CID_GROUP_MEMBER_RSP
+	required uint32                            group_id=1;         //群id
+	repeated GroupMemberItem                   member_list = 2;    //群成员列表
+	optional uint64                            update_time = 3; 
+	optional com.proto.basic.GroupType         group_type=4;       //群类型
+	required com.proto.basic.ResultCode        result=10;
+}
+
+// 获取群详细信息
+message GroupInfoReq {
+//cmd id:			CID_GROUP_INFO_REQ
+	required string                       user_id=1;
+	required uint32                       group_id=2;
+	optional uint64                       update_time = 3;
+	optional com.proto.basic.GroupType    group_type=4;    //群类型
+}
+
+message GroupInfoRsp {
+//cmd id:			CID_GROUP_INFO_REQ
+    optional GroupInfo                     group_info= 1;
+	optional  bool                         update=2;//(true:update  ,false: no update)
+	optional com.proto.basic.ResultCode    result=10;
+}
+
+enum GroupInfoModifyType{
+	MODIFY_NAME=1;        //修改群名称
+	MODIFY_AVATAR=2;      //修改头像
+	MODIFY_TOPIC=3;       //修改公告
+	MODIFY_OWNER=4;       //群主转让
+}
+
+// 群资料修改 
+message GroupInfoModifyReq{
+	//cmd id:			CID_GROUP_INFO_MODIFY_REQ
+	required string                             user_id = 1;                        //用户id
+	required uint32                             group_id = 2;	                    //群id 
+	optional string                             group_name = 3;                     //群名称
+	optional string                             group_avatar = 4;                   //群头像
+	optional string                             topic=5;                           //主题        
+	optional string                             owner_id=6;                        //群主转让
+	required GroupInfoModifyType                type =7;                           //修改类别
+	required string                             src_owner_name = 8;                //原群主昵称
+	
+	optional string                             dst_owner_name=9;                  //转让群主昵称
+	optional com.proto.basic.GroupType          group_type=10;                     //群类型
+}
+
+// 群资料修改返回
+// + 增加返回群组ID 
+message GroupInfoModifyRsp{
+	//cmd id:			CID_GROUP_INFO_MODIFY_RSP
+	optional com.proto.basic.ResultCode       result = 1;	
+	required uint32                           group_id = 2;                            //群id 
+	optional GroupInfo                        group_info = 3;                          //修改后的群详细信息
+	required GroupInfoModifyType              type =4;                                //修改类别   
+	optional com.proto.basic.GroupType        group_type=5;                           //群类型
+	required string                           src_owner_name = 8;   
+	optional string                           dst_owner_name=9;
+}
+
+// 群资料修改通知
+message IMGroupInfoModifyNotify{
+	//cmd id:			CID_GROUP_INFO_MODIFY__NOTIFY
+	
+	required uint32                                 group_id = 1;                  //群id
+	required GroupInfo                              group_info = 2;                //修改后的群详细信息
+	required GroupInfoModifyType                    type =3;                       //修改类别 
+	optional string                                 user_id = 4;                   //谁修改
+	optional com.proto.basic.GroupType              group_type=5;                  //群类型
+	required string                                 src_owner_name = 8;
+	optional string                                 dst_owner_name=9;
+}
+
+//个性群设置
+enum GroupSetType{
+		TYPE_NOT_DISTURB=1;        //消息免打扰
+		TYPE_INVITE_PERMISSION=2;
+}
+
+//这个协议暂时不实现
+message IMGroupSetReq{
+	//cmd id:			CID_GROUP_SET_REQ
+	
+	required uint32 group_id = 1;
+	required string user_id = 2;
+	required GroupSetType  type =3;
+	optional bool  not_disturb = 4; //(true:can't recv msg,false:can recv msg)
+	optional bool invite_permission=5; //(true:need owner permission)
+
+
+}
+
+message IMGroupSetRsp{
+	//cmd id:			CID_GROUP_SET_RSP
+	required uint32 group_id = 1;
+	required GroupSetType  type =2;
+	optional bool  not_disturb = 3; //(true:can't recv msg,false:can recv msg)
+
+	optional bool invite_permission=4;//(true:need owner permission)
+	optional com.proto.basic.ResultCode    result=10;
+}
+
+

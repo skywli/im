@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+package com.proto.redis ;
+
+import "IM.Group.proto";
+import "IM.Buddy.proto";
+message RDBuddyList{
+	optional uint64 update_time = 1;			//服务器最新的版本
+	repeated com.proto.buddy.IMBuddyInfo buddy_info_list = 2;
+}
+
+
+message RDGroupMemberList {
+	repeated com.proto.group.GroupMemberItem member_list = 1;
+	optional uint64 update_time = 2;
+}
+
+
+message RDGroupItem{
+	optional uint32    group_id=1;
+	optional uint64    update_time = 2; //创建/删除时间
+}
+
+message RDUserGroupList {
+	repeated RDGroupItem group_item_list = 1;
+}
+
+message RDGroupInfo{
+	optional com.proto.group.GroupInfo group_info=1;
+}
+
+message RDUserInfo{
+	optional com.proto.buddy.UserInfo user_info=1;
+}

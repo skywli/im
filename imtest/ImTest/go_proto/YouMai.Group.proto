@@ -1,0 +1,187 @@
+
+
+syntax = "proto2";
+
+package youmai ;
+import "IM.Basic.proto";
+
+
+message GroupItem{
+	optional uint32    group_id=1;
+	optional uint64   info_update_time = 2; //群资料最新的更新时间戳
+}
+
+message GroupMemberItem{
+	optional string    member_id = 1;     
+	optional string    member_name=2;
+	optional string    user_name=3;
+	optional uint32    member_role = 4;  //群成员角色(0-群主，1-管理员，2-普通成员) 
+	
+}
+message GroupInfo{
+	optional uint32   group_id=1;
+	optional string   group_name = 2;
+	optional string   owner_id = 3;
+	optional string   group_avatar = 4; //头像
+	optional string   topic =5 ;
+	optional uint64   info_update_time = 6; //群资料最新的更新时间戳
+	optional uint32  group_member_count=7;//群成员数
+
+}
+
+// 创建/解散群
+
+message GroupCreateReq {
+//cmd id:	 CID_GROUP_CREATE_REQ
+    optional string    user_id = 1;      //创建者id
+    repeated GroupMemberItem  member_list = 2; //邀请添加用户
+	optional string   group_name = 3;
+	optional string   group_avatar = 4; //头像
+	optional string   topic =5 ;
+}
+
+message GroupCreateRsp {
+//cmd id:	 CID_GROUP_CREATE_RSP
+    optional uint32    group_id = 1;     
+    optional string    user_id = 2;      //创建者id
+    repeated GroupMemberItem  member_list = 3; //成功添加用户
+	optional uint64    update_time=4;
+	optional ResultCode    result=10; 
+}
+
+message GroupDissolveReq {
+//cmd id:	 CID_GROUP_DISSOLVE_REQ
+    optional string    user_id = 1;      //创建者id
+    optional uint32    group_id = 2; 
+}
+
+message GroupDissolveRsp {
+//cmd id:	 CID_GROUP_DISSOLVE_RSP
+    optional uint32    group_id = 1; 
+	optional ResultCode    result=10; 
+}
+
+// 群操作通知
+message GroupOptNotify{
+	//cmd id:			CID_GROUP_OPT_NOTIFY
+	optional uint32 opt_type = 1;	// 1-入群  0-解散群
+	optional uint32 group_id =2;
+}
+
+enum GroupMemberOptType{
+	GROUP_MEMBER_OPT_ADD=1;
+	GROUP_MEMBER_OPT_DEL=2;
+}
+
+// 添加/删除群成员
+message GroupMemberChangeReq {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_REQ
+	optional string    user_id=1;
+	optional uint32    group_id = 2;      
+	repeated GroupMemberItem  member_list = 3; 
+	optional GroupMemberOptType   type=4;
+}
+
+message GroupMemberChangeRsp {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_RSP
+
+	optional uint32 group_id = 1;      
+	repeated GroupMemberItem  member_list = 2; 
+	optional GroupMemberOptType   type=3;
+	optional uint64            update_time=4;
+	optional ResultCode    result=10; 
+}
+
+message GroupMemberChangeNotify {
+//cmd id:	 CID_GROUP_CHANGE_MEMBER_NOTIFY
+	optional uint32 group_id = 1;      
+	repeated GroupMemberItem  member_list = 2; 
+	optional GroupMemberOptType   type=3;
+	optional uint64            update_time=4;
+}
+
+//获取群列表  拉取条件：点击群组图标拉取 （先用本地数据展示，再后台更新）
+message GroupListReq {
+//cmd id:	 CID_GROUP_LIST_REQ
+	optional string    user_id=1;
+	repeated GroupItem group_item_list=2; //用于群资料，群成员同步，客户端上传本地每个群时间戳
+}
+
+message GroupListRsp {
+//cmd id:	 CID_GROUP_LIST_RSP
+	repeated GroupInfo group_info_list = 1;//变更的群列表
+	repeated uint32   latest_group_id_list=2;//没有变更的群
+	optional ResultCode    result=10; 
+}
+
+//获取群成员  拉取条件：点击成员列表图标拉取
+message GroupMemberReq {
+//cmd id:			CID_GROUP_MEMBER_REQ
+	optional uint32 group_id=1;
+	optional string    user_id=2;
+	optional uint64 update_time = 3;
+}
+
+message GroupMemberRsp {
+//cmd id:			CID_GROUP_MEMBER_RSP
+	optional uint32 group_id=1;
+	repeated GroupMemberItem member_list = 2;
+	optional uint64 update_time = 3;
+	optional ResultCode    result=10;
+}
+
+// 获取群详细信息
+message GroupInfoReq {
+//cmd id:			CID_GROUP_INFO_REQ
+	optional string    user_id=1;
+	optional uint32 group_id=2;
+	optional uint64 update_time = 3;
+}
+
+message GroupInfoRsp {
+//cmd id:			CID_GROUP_INFO_REQ
+    optional GroupInfo  group_info= 1;
+	optional  bool      update=2;//(true:update  ,false: no update)
+	optional ResultCode    result=10;
+}
+
+
+
+// 群资料修改 
+message GroupInfoModifyReq{
+	//cmd id:			CID_GROUP_INFO_MODIFY_REQ
+	optional string user_id = 1;
+	optional uint32 group_id = 2;	
+	optional string group_name = 3;
+	optional string group_avatar = 4;
+	optional string topic        =5;    //主题
+	
+}
+
+// 群资料修改返回
+// + 增加返回群组ID bob 2016.08.22
+message GroupInfoModifyRsp{
+	//cmd id:			CID_GROUP_INFO_MODIFY_RSP
+	optional ResultCode result = 1;	
+	optional uint32 group_id = 2;
+	optional GroupInfo group_info = 3;
+}
+
+// 群资料修改通知
+message IMGroupInfoModifyNotify{
+	//cmd id:			CID_GROUP_INFO_MODIFY__NOTIFY
+
+	optional uint32 group_id = 1;
+	optional GroupInfo group_info = 2;
+	
+}
+
+
+
+
+
+
+
+
+
+

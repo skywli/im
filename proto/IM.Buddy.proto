@@ -1,0 +1,233 @@
+syntax = "proto2";
+
+package com.proto.buddy ;
+import "IM.Basic.proto";
+
+
+// 用户头像修改请求
+message IMChangeAvatarReq{
+	//cmd id:		0x720f
+
+	optional string user_id = 1;
+	optional string avatar_url = 3;			//http上传生成url
+	optional bytes attach_data = 20;
+}
+
+// 用户头像修改返回
+message IMChangeAvatarRsp{
+	//cmd id:		0x7210
+	optional com.proto.basic.ResultCode result = 1;
+	optional uint64 update_time = 2;	
+	optional bytes attach_data = 20;
+}
+
+
+// 个性签名修改请求
+message IMChangeSignInfoReq{
+   //cmd id:		0x7212		
+    optional string user_id = 1;
+    optional string sign_info = 3;
+    optional bytes attach_data = 20;
+}
+
+// 个性签名修改返回
+message IMChangeSignInfoRsp{
+    //cmd id:		0x7213
+    optional com.proto.basic.ResultCode result = 1;
+	optional uint64 update_time = 2;				
+    optional bytes attach_data = 20;
+}
+
+//==========================================================
+// 联系人相关操作 
+//==========================================================
+enum BuddyOptType{
+	BUDDY_OPT_ADD_REQ=1;                //添加好友请求
+	BUDDY_OPT_ADD_AGREE=2;              //同意请求
+	BUDDY_OPT_ADD_REFUSE =3;            //拒绝请求
+	BUDDY_OPT_DEL=4;                    //删除好友
+	BUDDY_OPT_ADD_BLACKLIST=5;          //加入黑名单
+	BUDDY_OPT_REMOVE_BLACKLIST=6;       //移除黑名单
+}
+enum ResultCode{
+	CODE_OK=1;
+	CODE_BUDDY_REQUESTING=2;//重复发起添加好友申请
+	CODE_BUDDY_BUILT=3; //已经是好友
+	CODE_BLACKLIST=4;      //加入黑名单
+	CODE_NOT_BUDDY=5;      //非好友
+	CODE_BUDDY_EXPIRED=6;   //好友请求已过期
+	CODE_BUDDY_READD=7; //删除后重新添加
+	CODE_OTHER_ERROR=20;   
+}
+//联系人操作请求
+message IMOptBuddyReq{	
+	//cmd id: 0x7216
+	required string src_user_id = 1;				//消息发送方
+	required string dest_user_id = 2;				//消息接受方
+	required BuddyOptType opt_type =3;	            
+	optional string opt_remark = 4;                 //添加好友附加内容
+	
+	optional string username=5;                     //发送方用户名
+	optional string nickname=6;                     //发送方昵称
+	optional string avatar=7;                       //发送方头像
+	optional string orgName=8;                      //组织架构名
+	optional string realName=9;  
+} 
+
+//联系人操作结果返回
+message IMOptBuddyRsp{
+	//cmd id:		0x7217						
+	required string src_user_id = 1;				//消息发送方
+	required string dest_user_id = 2;				//消息接受方				 
+	required BuddyOptType opt_type = 3;	 
+	optional string opt_remark = 4;
+	optional ResultCode result = 5;	
+	
+	optional string username=6;
+	optional string nickname=7;
+	optional string avatar=8; 
+	optional string orgName=9;                      //组织架构名
+	optional string realName=10;
+}
+
+//联系人操作通知
+message IMOptBuddyNotify{
+	//cmd id:		0x7217						
+	required string src_user_id = 1;				//消息发送方
+	required string dest_user_id = 2;				//消息接受方				
+	required BuddyOptType opt_type = 3;	 
+	optional string opt_remark = 4;
+	//消息发送方信息
+	optional string username=5;
+	optional string nickname=6;
+	optional string avatar=7;     
+    optional string orgName=8;                      //组织架构名	
+	optional string realName=9;
+}
+
+// 联系人昵称修改请求
+message IMModiNickNameReq{
+	//cmd id:		0x7218   					
+	optional string src_user_id = 1;				//消息发送方
+	optional string dest_user_id = 3;				//消息接受方
+	optional string 	nick_name = 20;               //备注好友姓名
+}
+// 联系人昵称修改返回
+message IMModiNickNameRsp{
+	//cmd id:		0x7219  					
+	optional string     user_id = 1;				
+	optional string 	nick_name = 2;
+	optional uint64	    update_time = 3;
+}
+
+//好友信息
+message IMBuddyInfo{				
+	optional string user_id = 1;				//被申请的id    
+	optional uint32 status =2;		//状态（删除：0；同意：1；拉黑：2）
+	optional uint64 req_time = 3;
+	optional string remark = 4;
+}
+
+///////////////////////////////////////////////////////
+// 获取好友请求列表
+message IMGetBuddyReqListReq{
+	//cmd id:		0x721a
+	optional string user_id = 1;	     //用户id
+	optional uint64 update_time = 2;	//客户端存有的版本
+}
+
+message IMGetBuddyReqListRsp{
+	//cmd id:		0x721b
+	optional uint64 update_time = 1;			//服务器最新的版本
+	repeated IMBuddyInfo BuddyInfos = 2;        //好友列表
+	required com.proto.basic.ResultCode    result=10;
+}
+
+
+//组织架构拉取
+message OrgInfo{
+	optional string org_id=1;
+	optional int32    type=2;  //(org:1 user:0)
+	optional string  name=3;
+	optional string  username=4;//只有user才有
+	optional string  avator=5; //只有user才有
+	optional string  jobname=6;//岗位
+}
+
+message IMGetOrgReq{
+	optional string org_id=1;
+}
+
+message IMGetOrgRsp{
+	optional string org_id=1;
+	repeated OrgInfo org_list=2;
+}
+
+//==========================================================
+// 联系人资料管理
+//==========================================================
+//用户资料拉取
+message UserInfo{
+	optional string	user_id =  1;
+	optional string nick_name=2;
+	optional string real_name=3;
+	optional string user_name=4;
+	optional string phone  = 5 ;
+	optional string email  = 6 ;
+	optional string avator=7;
+	optional int32  sex=8;
+	optional string sign=9;     //个性签名
+	
+	optional string  job_name=10; //岗位名称
+	optional string  org_name=11; //部门名称
+	optional string  org_id=12;//组织架构id
+	
+}
+
+message IMGetUserInfoReq{
+// CID_USER_INFO_REQ =0x7011;
+	optional string user_id=1; //协议发起者
+	repeated string user_item_list=2;//需要查询资料的用户  （一次不超过30条）
+	optional int32  type=3;//(0:彩管家用户 1：彩之云用户）
+}
+
+message IMGetUserInfoRsp{
+// CID_USER_INFO_RSP= 0x7012;
+	repeated UserInfo user_info_list =1;
+	optional com.proto.basic.ResultCode  result=2; 
+}
+
+//userinfo管理请求
+message IMInfoOptReq{
+// CID_USER_INFO_OPT_REQ = 0x7013
+	optional UserInfo user_info =1;
+	optional int32    type=2;      //(0:删除，1：添加）
+	optional string   user_id=3;
+}
+
+message IMInfoOptRsp{
+//  CID_USER_INFO_OPT_RSP= 0x7014
+	optional int32    type=1;      //(0:删除，1：添加）
+	optional com.proto.basic.ResultCode  result=2;
+}
+
+
+
+//收藏联系人
+message ContactInfo{
+	optional string	user_id =  1;  
+	optional string user_info=2;
+	optional  uint32   flag =3; //收藏标识(0:新增，1：删除 2：修改)
+}
+message collectContactsReq{
+//cmd :CID_CONTACT_COLLECTION_REQ
+	optional string	user_id =  1;   
+	repeated ContactInfo user_id_list=2;
+}
+
+message collectContactsRsp{
+//cmd :CID_CONTACT_COLLECTION_RSP
+	optional string	user_id =  1;   
+	repeated ContactInfo user_id_list=2;
+	optional com.proto.basic.ResultCode  result=3;
+}

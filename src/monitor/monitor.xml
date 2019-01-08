@@ -1,0 +1,105 @@
+<monitor type="monitor">
+    <!-- IP and port to listen for incoming monitor connections on -->
+    <ip>127.0.0.1</ip>
+    <port>8802</port>
+    <!-- specify which service can connect monitor and  every service config,else will be refused connect-->
+    <services>
+        <service type="conn">
+            <node name="conn1">
+                <ip>127.0.0.1</ip>
+                <port>8000</port>
+                <id>10</id>
+            </node>
+        </service>
+        <service type="dispatch">
+            <node name="dispatch1">
+                <ip>127.0.0.1</ip>
+                <port>8010</port>
+                <id>20</id>
+            </node>
+        </service>
+        <service type="login">
+            <node name="login1">
+                <ip>127.0.0.1</ip>
+                <port>8020</port>
+                <id>30</id>
+                <route stragry="2">*</route>
+                <!-- stragry value :1(poll),2(hash),3(user userid) -->
+            </node>
+            <node name="login63">
+                <ip>127.0.0.1</ip>
+                <port>8890</port>
+                <id>63</id>
+                <route stragry="4">29768316,17487408,29815408</route>
+            </node>
+        </service>
+        <service type="msg">
+            <node name="msg1">
+                <ip>127.0.0.1</ip>
+                <port>8030</port>
+                <id>40</id>
+                <route stragry="2">*</route>
+            </node>
+            <node name="msg64">
+                <ip>127.0.0.1</ip>
+                <port>8090</port>
+                <id>64</id>
+                <route stragry="3">[0...255]</route>
+            </node>
+        </service>
+        <service type="loadbalance">
+            <node name="loadbalance1">
+                <ip>127.0.0.1</ip>
+                <port>8040</port>
+                <id>50</id>
+            </node>
+        </service>
+        <service type="broadcast">
+            <node name="broadcast1">
+                <ip>127.0.0.1</ip>
+                <port>8050</port>
+                <id>60</id>
+            </node>
+        </service>
+        <!--        <service type="dbproxy">
+            <node name="dbproxy1">
+                <ip>192.168.0.66</ip>
+                <port>10086</port>
+                <id>110</id>
+            </node>
+        </service>-->
+        <service type="buddy">
+            <node name="buddy1">
+                <ip>127.0.0.1</ip>
+                <port>8060</port>
+                <id>120</id>
+            </node>
+        </service>
+		<service type="group">
+            <node name="group1">
+                <ip>127.0.0.1</ip>
+                <port>8070</port>
+                <id>130</id>
+            </node>
+        </service>
+    </services>
+    <!-- redis config -->
+    <!--<config>
+        <redis>
+            <ip>192.168.0.16</ip>
+            <port>6380</port>
+            <passwd>ym1234</passwd>
+        </redis>
+    </config>-->
+    <daemon>on</daemon>
+		<!-- specify log level 
+	This should be one of
+	debug:1
+	trace:2
+	info:3
+	warn:4
+	error:5
+	//default debug
+	-->
+	<loglevel>1</loglevel>  
+</monitor>

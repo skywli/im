@@ -1,0 +1,53 @@
+CMakeCache.txt
+CMakeFiles/
+CMakeFiles/*
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+#QT
+build-*/
+CMakeLists.txt.user
+
+#WARNING, this is complex project. with multi subproject.
+#android ignore
+.idea/
+# built application files
+*.apk
+*.ap_
+
+# files for the dex VM
+*.dex
+
+# Java class files
+*.class
+
+# built native files
+*.o
+*.so
+*.log*
+
+# generated files
+bin/
+gen/
+
+# Ignore gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+service_*-build/
+
+
+#proto generated files should fitled
+*.pb.cc
+*.pb.h
+
+#excute file
+im_*
+
+#py
+*.pyc
+src/python_logic/IM/

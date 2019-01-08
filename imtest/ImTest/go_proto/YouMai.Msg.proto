@@ -1,0 +1,105 @@
+
+syntax = "proto2";
+package youmai;
+
+import "IM.Basic.proto";
+
+//==========================================================
+// 消息信息子结构
+//==========================================================
+// 消息字体信息
+// font_style |= _bBold ? 0x01 : 0;
+// font_style |= _bItalic ? 0x02 : 0;
+// font_style |= _bUnderLine ? 0x03 : 0;
+// 
+// _bBold = font_style & 0x01 ? true : false;
+// _bItalic = font_style & 0x02 ? true ； false;
+// _bUnderLine = font_style & 0x03 ? true : false;
+message MsgFont{
+    optional string font_name = 1;
+    optional uint32 font_size = 2;	
+    optional uint32 font_color = 3;
+    optional uint32 font_style = 4;	// Bold、Italic、UnderLine
+}
+//消息类型
+enum IM_CONTENT_TYPE{
+    IM_CONTENT_TYPE_TEXT = 0;
+    IM_CONTENT_TYPE_SHORT_MESSAGE = 1 ;
+    IM_CONTENT_TYPE_CONTACTS = 2 ;
+    IM_CONTENT_TYPE_RECOMMEND_APP = 3 ;
+    IM_CONTENT_TYPE_NO_DISTURB = 4 ;
+    IM_CONTENT_TYPE_LOCATIONSHARE = 5 ;
+
+    IM_CONTENT_TYPE_IMAGE = 6 ;
+    IM_CONTENT_TYPE_AT = 7 ;
+    IM_CONTENT_TYPE_URL = 8 ;
+    IM_CONTENT_TYPE_AUDIO = 9 ;
+    IM_CONTENT_TYPE_VIDEO = 10 ;
+    IM_CONTENT_TYPE_LOCATION = 11 ;
+    IM_CONTENT_TYPE_FILE =  12;
+    IM_CONTENT_TYPE_BIZCARD = 13;
+    IM_CONTENT_TYPE_KAQUAN = 14;
+}
+//消息属性
+enum MsgProperty {
+    MSG_PTOPERTY_NONE  = 0x01;			//正常消息
+    MSG_PROPERTY_RECEIPT = 0x02;		//回执消息
+    MSG_PROPERTY_URGENT = 0x03;			//紧急消息		
+    MSG_PROPERTY_QUOTE = 0x04;			//引用消息
+    MSG_PROPERTY_RECALL = 0x05;			//消息撤回
+}
+// 会话类型
+enum SessionType{
+    SESSION_TYPE_SINGLE  = 1;           //单点
+    SESSION_TYPE_MULTICHAT = 2;         //多人会话  
+    SESSION_TYPE_ORGGROUP = 3;          //组织架构群
+}
+
+
+// Msg Data
+message MsgData{
+    optional int64 msg_id = 1;				//消息ID
+    optional string src_user_id = 2;		//消息发送方
+    optional string dest_user_id = 3;			//消息接收方(groupId or userID)
+    optional uint32  group_id =4;
+    optional SessionType session_type = 5;	//会话类型
+    optional uint64 create_time = 6;		//消息时间
+    optional string msg_content = 7;		//消息内容
+    optional IM_CONTENT_TYPE content_type=8; //消息类型
+    optional MsgFont msg_font = 9; 		//消息字体信息
+    optional uint32 msg_status = 10;	 // 0-未读(未回执)，1-已读(已回执)
+    optional MsgProperty msg_property = 11; //消息属性(正常消息、回执消息、紧急消息)	
+    repeated string force_push_ids_list = 12;	//群组消息强制推送列表(被@对象id列表)	
+	
+	optional  string  src_realname=13;
+	optional  string  src_avatar  =14;
+	optional  string  src_mobile =15;
+	optional  string  src_sex=16;
+}
+
+
+// 群消息
+message  ChatMsg{
+    optional MsgData data = 1;
+}
+
+message OfflineMsgNotify {
+    repeated MsgData  offline_msg_list= 1; 
+}
+
+
+
+//1 server收到sender消息 给sender ack
+// 2 rever收到server消息 给server ack
+message ChatMsg_Ack{
+    optional string    user_id = 1;
+    optional int64     msg_id = 2;
+    optional ERRNO_CODE  errer_no = 3;
+	optional bool is_target_online=20;//不用
+
+}
+
+message OfflineMsgAck {
+    repeated int64  msg_id_list= 1; 
+}
+
