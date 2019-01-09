@@ -1,0 +1,160 @@
+
+syntax = "proto2";
+
+package youmai ;
+import "IM.Basic.proto";
+
+// 用户头像修改请求
+message IMChangeAvatarReq{
+	//cmd id:		0x720f
+
+	optional string user_id = 1;
+	optional string app_id = 2;
+	optional string avatar_url = 3;			//http上传生成url
+	optional bytes attach_data = 20;
+}
+
+// 用户头像修改返回
+message IMChangeAvatarRsp{
+	//cmd id:		0x7210
+	optional ResultCode result = 1;
+	optional uint64 update_time = 2;	
+	optional bytes attach_data = 20;
+}
+
+
+// 个性签名修改请求
+message IMChangeSignInfoReq{
+   //cmd id:		0x7212		
+    optional string user_id = 1;
+	optional string app_id = 2;
+    optional string sign_info = 3;
+    optional bytes attach_data = 20;
+}
+
+// 个性签名修改返回
+message IMChangeSignInfoRsp{
+    //cmd id:		0x7213
+    optional ResultCode result = 1;
+	optional uint64 update_time = 2;				
+    optional bytes attach_data = 20;
+}
+
+//==========================================================
+// 联系人相关操作 
+//==========================================================
+enum BuddyOptType{
+	BUDDY_OPT_ADD=1;
+	BUDDY_OPT_DEL=2;
+}
+//联系人操作请求
+message IMOptBuddyReq{	
+	//cmd id: 0x7216
+	optional string src_user_id = 1;				//消息发送方
+	optional string dest_user_id = 2;				//消息接受方
+	optional BuddyOptType opt_type =3;	// add or del 
+	optional string opt_remark = 4;
+}
+
+
+//联系人操作结果返回
+message IMOptBuddyRsp{
+	//cmd id:		0x7217						
+
+	optional string user_id =1;				
+	optional uint64 response_time = 2; 
+	optional BuddyOptType opt_type = 3;	// add or del 
+	optional int32 result = 4;					//（同意:1，拒绝:0)
+	optional string opt_remark = 5;
+}
+
+
+//仅用于服务端
+message IMOptBuddyResultRsp{
+	//cmd id:		0x721C						
+
+	optional string user_id =1;				
+	optional uint64 response_time = 2; 
+	optional BuddyOptType opt_type = 3;	// add or del 
+	optional int32 result = 4;					//成功失败（1-成功  0-失败）
+	optional string opt_remark = 5;
+}
+
+// 联系人昵称修改请求
+message IMModiNickNameReq{
+	//cmd id:		0x7218   					
+	optional string src_user_id = 1;				//消息发送方
+	optional string dest_user_id = 3;				//消息接受方
+	optional bytes 	nick_name = 20;               //备注好友姓名
+}
+// 联系人昵称修改返回
+message IMModiNickNameRsp{
+	//cmd id:		0x7219  					
+	optional string user_id = 1;				
+	optional bytes 	nick_name = 2;
+	optional uint64	update_time = 3;
+}
+
+//加好友申请信息
+message IMBuddyReqInfo{				
+	optional string user_id = 1;				//被申请的id    
+	optional uint32 req_stat =2;		//请求状态（请求中，同意，拒绝）
+	optional uint64 req_time = 3;
+	optional string remark = 4;
+}
+
+///////////////////////////////////////////////////////
+// 获取好友请求列表
+message IMGetBuddyReqListReq{
+	//cmd id:		0x721a
+	optional string user_id = 1;	
+	optional uint64 update_time = 2;	//客户端存有的版本
+	optional uint32 pack_index = 3;		//当前分包索引
+}
+
+message IMGetBuddyReqListRsp{
+	//cmd id:		0x721b
+	optional uint64 update_time = 1;			//服务器最新的版本
+	repeated IMBuddyReqInfo BuddysReqs = 2;
+	optional uint32 pack_index = 3;				//当前分包索引
+	optional uint32 pack_count = 4;				//分包总数
+}
+
+//组织架构拉取
+message OrgInfo{
+	optional string org_id=1;
+	optional int32    type=2;  //(org:1 user:0)
+	optional string  name=3;
+	optional string  username=4;//只有user才有
+	optional string  avator=5; //只有user才有
+}
+
+message IMGetOrgReq{
+	optional string org_id=1;
+}
+
+message IMGetOrgRsp{
+	optional string org_id=1;
+	repeated OrgInfo org_list=2;
+}
+
+
+//用户资料拉取
+message UserInfo{
+	optional string	user_id =  1;
+	optional string phone  = 2 ;
+	optional string nick_name=3;
+	optional string avator=4;
+	optional int32  sex=5;
+	optional string sign=6;     //个性签名
+	optional bool   is_hx=20;   // true/false
+}
+
+message IMGetUserInfoReq{
+	optional string user_id=1;
+}
+
+message IMGetUserInfoRsp{
+	optional UserInfo user_info =1;
+	optional ResultCode  result=2;
+}
