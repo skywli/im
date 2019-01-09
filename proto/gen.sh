@@ -1,5 +1,4 @@
 #!/bin/bash
-#生成pb对象的脚本
 
 buildall()
 {
@@ -35,15 +34,15 @@ buildall()
 
 		if [ "${2}" = "yes" ];
 		then
-		    if [ ! -d ../src/tools/protobuf/ ]; then
+		    if [ ! -d ../src/common/protobuf/ ]; then
 			echo "创建目录"
-			mkdir -p ../src/tools/protobuf/
+			mkdir -p ../src/common/protobuf/
 		    else
 			echo "清空目录"
-			rm ../src/tools/protobuf/*
+			rm ../src/common/protobuf/*
 		    fi		
 
-		    cp $DST_DIR/cpp/* ../src/tools/protobuf/
+		    cp $DST_DIR/cpp/* ../src/common/protobuf/
 		    echo "拷贝到源码目录"
 
 		fi

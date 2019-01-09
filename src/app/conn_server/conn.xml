@@ -1,0 +1,33 @@
+<!-- conn configuration type is a important parameter,the value must be one of(monitor,conn,login,dispatch,msg,loadbalance,broadcast)-->
+<conn type="conn">
+	 <!-- IP/port the monitor is waiting for connections on -->
+	<monitor_ip>127.0.0.1</monitor_ip>
+	<monitor_port>8802</monitor_port>
+	
+	  <!-- inner IP and port to listen for incoming conn connections on -->
+	<ip>127.0.0.1</ip>
+	<port>8000</port>
+	 <!-- outer IP and port to listen for incoming conn connections on -->
+	<out_ip>192.168.0.16</out_ip>
+	<out_port>6602</out_port>
+    <listen_ip>192.168.0.16</listen_ip>
+    <listen_port>6602</listen_port>
+	<!-- conn will connect service -->
+	<conn_type>
+		<type>monitor</type>
+		<type>loadbalance</type>
+	</conn_type>
+	<!-- conn whether runing on backgroud ,the value is off/on -->
+	<daemon>on</daemon>
+		<!-- specify log level 
+	This should be one of
+	debug:1
+	trace:2
+	info:3
+	warn:4
+	error:5
+	//default debug
+	-->
+	<loglevel>1</loglevel>  
+</conn>
+	

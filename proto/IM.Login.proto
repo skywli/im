@@ -1,0 +1,43 @@
+
+syntax = "proto2";
+
+package com.proto.login ;
+import "IM.Basic.proto";
+
+//登录请求
+message User_Login {
+	optional string user_id = 1;                            //登录用户id
+	optional string app_id = 2;                             //登录app id
+	optional com.proto.basic.Device_Type device_type = 3;   //设备类型
+	optional string device_id = 4;                          //设备id
+    optional int32 version=8;                               //用户使用协议版本号
+}
+
+message User_Login_Ack {
+    optional com.proto.basic.ERRNO_CODE errer_no = 1;
+    optional string error = 2;
+	optional bool    upload=3; //是否上传资料
+}
+
+//登录剔除协议
+message Multi_Device_Kicked_Notify { 
+	optional string user_id = 1;                                //剔除用户                                      
+	optional int32 timestamp =2;                          
+    optional com.proto.basic.Device_Type new_device = 3 ;       
+	optional string new_device_id = 4 ;
+}
+
+//退出登录
+message User_LogOff {
+	optional string	user_id = 1;                //用户id
+	optional string	device_id = 2;               //设备id
+}
+
+message User_LogOff_Ack {
+    optional com.proto.basic.ERRNO_CODE errer_no = 1;
+	optional string error = 2;
+}
+
+message User_Offline{
+	optional string error = 1;
+}

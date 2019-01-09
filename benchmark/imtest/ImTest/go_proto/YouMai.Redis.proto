@@ -1,0 +1,35 @@
+syntax = "proto2";
+
+package youmai ;
+
+import "IM.Group.proto";
+
+message RDBuddyInfo{				
+	optional string user_id = 1;				//被申请的id    
+	optional uint32 req_stat =2;		//请求状态（2 请求中，1同意， 0拒绝）
+	optional uint64 req_time = 3;
+	optional string remark = 4;
+}
+
+message RDBuddyList{
+	optional uint64 update_time = 1;			//服务器最新的版本
+	repeated RDBuddyInfo buddy_info_list = 2;
+}
+
+
+message RDGroupMemberList {
+	repeated GroupMemberItem member_list = 1;
+	optional uint32 update_time = 2;
+}
+
+message RDGroupItem{
+	optional uint32    group_id=1;
+}
+
+message RDUserGroupList {
+	repeated RDGroupItem group_item_list = 1;
+}
+
+message RDGroupInfo{
+	optional GroupInfo group_info=1;
+}
