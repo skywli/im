@@ -45,9 +45,6 @@ service_*-build/
 *.pb.cc
 *.pb.h
 
-#excute file
-im_*
-
 #py
 *.pyc
 src/python_logic/IM/
