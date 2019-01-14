@@ -50,7 +50,8 @@ INCLUDE_DIRECTORIES("${COMMON}/third/tinyxml/")
 INCLUDE_DIRECTORIES("${COMMON}/third/redis/")
 
 LINK_DIRECTORIES("/usr/local/lib/")
-LINK_DIRECTORIES("${COMMON}")
+
+
 
 #ADD_EXECUTABLE(login_server ${DIR_SRCS} ${root} ${COMMON} ${redis} ${xml} ${base} ${protobuf} ${node} )
 ADD_EXECUTABLE(im_login ${DIR_SRCS} ${root})
