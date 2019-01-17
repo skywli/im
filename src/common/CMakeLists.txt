@@ -17,6 +17,7 @@ set(COMMON  ".")
 #set(CMAKE_BUILD_TYPE debug)
 
 
+INCLUDE_DIRECTORIES("../../include")
 # dir COMMON
 INCLUDE_DIRECTORIES("${COMMON}")
 FILE(GLOB root "${COMMON}/*.cc")

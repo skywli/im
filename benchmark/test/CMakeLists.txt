@@ -32,7 +32,7 @@ INCLUDE_DIRECTORIES("${COMMON}/third/redis")
 FILE(GLOB redis "${COMMON}/third/redis/hiredis/*.c")
 
 #dir log4cpp
-INCLUDE_DIRECTORIES("../include/")
+INCLUDE_DIRECTORIES("../../include/")
 
 LINK_DIRECTORIES("/usr/local/lib/")
 
