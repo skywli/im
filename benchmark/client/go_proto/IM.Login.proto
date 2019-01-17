@@ -1,0 +1,40 @@
+
+
+syntax = "proto2";
+
+package youmai ;
+import "YouMai.Basic.proto";
+
+message User_Login {
+	optional string user_id = 1;
+	optional string app_id = 2;
+	optional Device_Type device_type = 3;
+	optional string device_id = 4;
+    optional int32 version=8;
+}
+
+message User_Login_Ack {
+    optional ERRNO_CODE errer_no = 1;
+    optional string error = 2;
+	optional bool upload=3;
+}
+
+
+message Multi_Device_Kicked_Notify {
+	optional string user_id = 1;
+	optional int32 timestamp =2;
+    optional Device_Type new_device = 3 ;
+    
+	optional string new_device_id = 4 ;
+}
+
+message User_LogOff {
+	optional string	user_id = 1;
+	optional string	device_id = 2;
+}
+
+message User_LogOff_Ack {
+    optional ERRNO_CODE errer_no = 1;
+	optional string error = 2;
+}
+
