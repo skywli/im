@@ -5,7 +5,6 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 
-#QT
 build-*/
 CMakeLists.txt.user
 
@@ -18,9 +17,6 @@ CMakeLists.txt.user
 
 # files for the dex VM
 *.dex
-
-# Java class files
-*.class
 
 # built native files
 *.o
@@ -45,6 +41,6 @@ service_*-build/
 *.pb.cc
 *.pb.h
 
-#py
-*.pyc
-src/python_logic/IM/
+pkg
+vendor
+Gopkg.*
