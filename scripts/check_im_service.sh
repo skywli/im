@@ -1,10 +1,4 @@
 #!/bin/bash
-#=============================
-#ScriptName:checkymservice
-#ver:V3.0
-#Writed by Hanlue
-#Date:20160701
-#=============================
 cd `dirname $0`
 stty erase '^H'
 LOGFILE=/var/log/ymservice

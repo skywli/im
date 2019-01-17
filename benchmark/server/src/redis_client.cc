@@ -87,7 +87,7 @@ bool RedisClient::GetIMUser(std::vector<std::string> &value) {
 	context = getConnect();
 	if (context) {
 		if (SelectDB(context, 0)) {
-			GetMembers(context, "czy_us_9959f117-df60-4d1b-a354-776c20ffb8c7", _keys);
+			GetMembers(context, "userIds", _keys);
 			if (_keys.size() > 0) {
 				bValue = true;
                 copy(_keys.begin(),_keys.end(),back_inserter(value));

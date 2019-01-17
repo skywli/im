@@ -18,7 +18,7 @@ func main() {
 	initTask()
 }
 
-var key string = "czy_us_9959f117-df60-4d1b-a354-776c20ffb8c7"
+var key string = "userIds"
 
 func initTask() {
 	//选择db

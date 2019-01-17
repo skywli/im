@@ -1,9 +1,5 @@
 #!/bin/bash
 #=============================
-#ScriptName:ymservice
-#ver:V3.0
-#Date:20160803
-#=============================
 cd `dirname $0`
 stty erase '^H'
 #set program running environment
