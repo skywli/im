@@ -27,8 +27,7 @@ void notify(const char* msg_id) {
 
 }
 
-BroadcastServer::BroadcastServer()
-{
+BroadcastServer::BroadcastServer() :loop_(getEventLoop()), tcpService_(this, loop_){
 	pInstance = this;
 }
 
@@ -40,11 +39,7 @@ void BroadcastServer::OnRecv(int _sockfd, PDUBase * _base)
 {
 }
 
-void BroadcastServer::OnConn(int _sockfd)
-{
-}
-
-void BroadcastServer::OnDisconn(int _sockfd)
+void BroadcastServer::onEvent(int fd, ConnectionEvent event)
 {
 }
 
@@ -121,10 +116,7 @@ int BroadcastServer::init()
 		LOGD("not config http ip or port");
 		return -1;
 	}
-	m_loop = getEventLoop();
-	m_loop->init(1024);
-	TcpService::init(m_loop);
-	 NodeMgr::getInstance()->init(this, m_loop, NULL, NULL);
+	 NodeMgr::getInstance()->init(loop_, NULL, NULL);
 	return HttpServer::init(out_ip, out_port);
 		
 }
@@ -133,11 +125,11 @@ int BroadcastServer::start()
 {
 	HttpServer::start();
 	LOGD("BroadcastServer server listen on %s:%d", m_ip.c_str(), m_port);
-	if (TcpService::StartServer(m_ip, m_port) == -1) {
+	if (tcpService_.listen(m_ip, m_port) == -1) {
 		LOGE("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);
 		return -1;
 	}
-	PollStart();
+	tcpService_.run();
 	return 0;
 }
 

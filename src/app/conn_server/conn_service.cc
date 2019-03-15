@@ -22,7 +22,8 @@ int total_send_pkt;
 #define CONFIG_FDSET_INCR  128
 #define CONF_CONN_LISTEN_IP  "listen_ip"
 #define CONF_CONN_LISTEN_PORT "listen_port"
-ConnService::ConnService(){
+ConnService::ConnService() :loop_(getEventLoop()), tcpService_(this, loop_) {
+	loop_->init(m_max_conn);
 	m_conns = 0;
 	m_total_pkts = 0;
 	m_total_chat_pkts=0;
@@ -39,23 +40,20 @@ int ConnService::init()
 	
 	m_max_conn = maxclients + CONFIG_FDSET_INCR;
 	m_clients = new Client[sizeof(Client)*(m_max_conn+1)];
-	m_loop = getEventLoop();
-	m_loop->init(m_max_conn);
-	TcpService::init(m_loop);
-	CreateTimer(5000, Timer, this);
-	return m_msgService.init(m_loop, this);
+	loop_->createTimeEvent(5000, Timer, this);
+	return m_msgService.init(loop_, this);
 }
 
 int ConnService::start() {
 	LOGD("connect server listen on %s:%d", m_ip.c_str(), m_port);
-	if (TcpService::StartServer(m_ip, m_port) == -1) {
+	if (tcpService_.listen(m_ip, m_port) == -1) {
 		LOGE("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);
 		return -1;
 	}
 	if (m_msgService.start() == -1) {
 		return -1;
 	}
-	PollStart();
+	tcpService_.run();
 	return 0;
 }
 
@@ -79,7 +77,7 @@ int ConnService::recvBusiMsg(int sockfd, PDUBase & _data)
 	}
 	int cmd = _data.command_id;
 	
-	if (Send(sockfd, _data) == -1) {
+	if (tcpService_.Send(sockfd, _data) == -1) {
 		LOGE("send to user[%s] fail", user_id.c_str());
 	}
 	++total_send_pkts;
@@ -99,10 +97,10 @@ int ConnService::recvBusiMsg(int sockfd, PDUBase & _data)
 	return 0;
 }
 
-void ConnService::OnRecv(int _sockfd, PDUBase* _base) {
+void ConnService::onData(int _sockfd, PDUBase* _base) {
 	if (_sockfd > m_max_conn) {
 		LOGW("too much connection");
-		CloseFd(_sockfd);
+		tcpService_.closeSocket(_sockfd);
 		return;
 	}
 	Client* client = &m_clients[_sockfd];
@@ -117,7 +115,7 @@ void ConnService::OnRecv(int _sockfd, PDUBase* _base) {
 			LOGE("user(%s) offline", user_id.c_str());
 			User_Offline offline;
 			_base->ResetPackBody(offline, USER_LOGOFF);
-			Send(_sockfd, *_base);
+			tcpService_.Send(_sockfd, *_base);
 			delete _base;
 			return;
 		}
@@ -130,10 +128,20 @@ void ConnService::OnRecv(int _sockfd, PDUBase* _base) {
 	delete _base;
 }
 
-void ConnService::OnConn(int _sockfd) {
+void ConnService::onEvent(int fd, ConnectionEvent event)
+{
+	if (event == Connected) {
+		onConnnect(fd);
+	}
+	else {
+		onDisconnnect(fd);
+	}
+}
+
+void ConnService::onConnnect(int _sockfd) {
 	if (_sockfd > m_max_conn) {
 		LOGW("too much connection");
-		CloseFd(_sockfd);
+		tcpService_.closeSocket(_sockfd);
 		return;
 	}
    // LOGD("sockfd:%d connect",_sockfd);
@@ -142,14 +150,14 @@ void ConnService::OnConn(int _sockfd) {
 	m_conns++;
 }
 
-void ConnService::OnDisconn(int _sockfd) {
+void ConnService::onDisconnnect(int _sockfd) {
 	if (_sockfd > m_max_conn) {
 		return;
 	}
 	Client* client = &m_clients[_sockfd];
 	client->t = 0;
 	--m_conns;
-    CloseFd(_sockfd);
+	tcpService_.closeSocket(_sockfd);
 	if (client->state == CLIENT_OFFLINE) {
 		return;
 	}
@@ -188,14 +196,14 @@ void ConnService::parse(Connection* conn) {
 					PDUBase* pdu = new PDUBase;
 
 					int len = conn->buf_len >= pkt_len ? pkt_len : conn->buf_len;
-					_OnPduParse(data, len, *pdu);
+					pdu->_OnPduParse(data, len);
 					if (conn->buf_len >= pkt_len) {
 
 						conn->buf_len -= pkt_len;
 						conn->recv_pkt++;
 						data += pkt_len;
 						//	msg_info(msg);
-						OnRecv(fd, pdu);
+						onData(fd, pdu);
 						
 					}
 					//not enough a pkt ;
@@ -241,7 +249,7 @@ void ConnService::parse(Connection* conn) {
 				conn->less_pkt_len = 0;
 				conn->recv_pkt++;
 				//msg_info(msg);
-				OnRecv(fd, pdu);	
+				onData(fd, pdu);	
 				
 			}
 			else {

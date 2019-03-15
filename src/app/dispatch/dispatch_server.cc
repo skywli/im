@@ -9,7 +9,7 @@
 #include <hash.h>
 using namespace com::proto::server;
 using namespace com::proto::basic;
-#define DEFAULT_MAX_CONN          1024
+
 
 static int sec_recv_pkt;
 static int total_recv_pkt;
@@ -17,8 +17,7 @@ static int total_recv_pkt;
 static int sec_send_pkt;
  int total_send_pkts;
  int total_send_pkt;
-DispatchServer::DispatchServer(){
-    m_server = NULL;
+DispatchServer::DispatchServer():loop_(getEventLoop()), tcpService_(this,loop_){
 	m_pNode = CNode::getInstance();
 }
 
@@ -30,15 +29,12 @@ int DispatchServer::init()
         LOGE("not config ip or port");
         return -1;
     }
-
-    m_loop = getEventLoop();
-    m_loop->init(DEFAULT_MAX_CONN);
-    TcpService::init(m_loop);
-	CreateTimer(1000, Timer, this);
-    if (NodeMgr::getInstance()->init(m_loop, innerMsgCb, this) == -1) {
+   
+	loop_->createTimeEvent(1000, Timer, this);
+    if (NodeMgr::getInstance()->init(loop_, innerMsgCb, this) == -1) {
         return -1;
     }
-	m_pNode->init(this);
+	m_pNode->init(&tcpService_);
    // NodeMgr::getInstance()->setConfigureStateCb(configureStateCb, this);
 
 }
@@ -59,16 +55,16 @@ void DispatchServer::Timer(int fd, short mask, void * privdata)
 }
 int DispatchServer::start() {
     LOGD("dispatch server listen on %s:%d", m_ip.c_str(), m_port);
-    if (TcpService::StartServer(m_ip, m_port) == -1) {
+    if (tcpService_.listen(m_ip, m_port) == -1) {
         LOGE("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);
         return -1;
     }
-    PollStart();
+    tcpService_.run();
     return 0;
 }
 
 //recv busi msg
-void DispatchServer::OnRecv(int sockfd, PDUBase* base) {
+void DispatchServer::onData(int sockfd, PDUBase* base) {
     SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
     int cmd = base->command_id;
     switch (cmd) {
@@ -88,16 +84,13 @@ void DispatchServer::OnRecv(int sockfd, PDUBase* base) {
     delete base;
 }
 
-void DispatchServer::OnConn(int sockfd) {
-
-}
-//busi disconn
-void DispatchServer::OnDisconn(int sockfd) 
+void DispatchServer::onEvent(int fd, ConnectionEvent event)
 {
-	m_pNode->setNodeDisconnect(sockfd);
-    CloseFd(sockfd);
+	//busi disconn
+	if(event==Disconnected)
+	m_pNode->setNodeDisconnect(fd);
+	tcpService_.closeSocket(fd);
 }
-
 
 int DispatchServer::getsock(int cmd, int user_id)
 {
@@ -173,7 +166,7 @@ int DispatchServer::dispatchMsg(int sockfd, SPDUBase & base)
 		int nid=m_pNode->getUserNodeIdSock(it->second, user_id,fd);
         if (fd!=-1 && nid!=-1) {
             LOGD("dispatch cmd(%d) to node[sid:%s,nid:%d", cmd, sidName(it->second), nid);
-            return Send(fd, base);
+            return tcpService_.Send(fd, base);
         }
         LOGE("no node handler cmd(%d) ", cmd);
     }

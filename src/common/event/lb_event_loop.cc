@@ -24,7 +24,7 @@
 
 LbEventLoop::LbEventLoop()
 {
-    m_size = MIN_FD_SIZE;
+    m_size = DEFAULT_MAX_CONN;
     m_timeid = 0;
     m_base=NULL;
     m_events=NULL;

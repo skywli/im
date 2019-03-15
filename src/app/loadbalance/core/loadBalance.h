@@ -2,14 +2,13 @@
 #define _LOADBALANCE_H
 
 
-
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include <list>
 #include <mutex>
 
 #include "typedef.h"
 #include<cnode.h>
-#include "pdu_base.h"
-#include "tcp_service.h"
 #include <google/protobuf/message.h>
 
 class LoadbalanceObject;
@@ -54,16 +53,15 @@ public:
 };
 
 
-class LoadBalanceServer :public TcpService {
+class LoadBalanceServer :public Instance {
 public:
 	LoadBalanceServer();
 
 	int init();
 	int start();
 	int innerMsgCb(int sockfd, SPDUBase & base, void * arg);
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
-	void OnConn(int _sockfd);
-	virtual void OnDisconn(int _sockfd);
+	virtual void onData(int _sockfd, PDUBase* _base);
+	virtual void onEvent(int fd, ConnectionEvent event);
 
 
 	void ProcessRegistService(int _sockfd, SPDUBase &_pack);
@@ -85,7 +83,8 @@ public:
 	int                index_;
 	std::string           m_ip;
 	short                 m_port;
-	SdEventLoop*                        m_loop;
+	SdEventLoop*                        loop_;
+	TcpService                         tcpService_;
 	CNode*                    m_pNode;
 };
 

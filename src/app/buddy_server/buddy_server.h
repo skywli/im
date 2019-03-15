@@ -1,9 +1,9 @@
 #ifndef _CONNECTION_SERVER_H
 #define _CONNECTION_SERVER_H
 
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include "IM.Buddy.pb.h"
-#include "tcp_service.h"
-#include "block_tcp_client.h"
 #include <google/protobuf/message.h>
 #include <list>
 #include <string>
@@ -67,7 +67,7 @@ namespace buddy {
 		TIME_T             time;
 		handlerCb         handler;
 	};
-	class BuddyServer :public TcpService {
+	class BuddyServer :public Instance {
 	public:
 
 		static BuddyServer* getInstance();
@@ -78,9 +78,8 @@ namespace buddy {
 
 		void registCmd(int sid, int nid);
 
-		virtual void OnRecv(int _sockfd, PDUBase* _base);
-		virtual void OnConn(int _sockfd);
-		virtual void OnDisconn(int _sockfd);
+		virtual void onData(int _sockfd, PDUBase* _base);
+		virtual void onEvent(int fd, ConnectionEvent event);
 
 		int processInnerMsg(int sockfd, SPDUBase & base);
 
@@ -185,7 +184,8 @@ namespace buddy {
 		MsgProcess                  m_chat_msg_process;
 
 		//	MsgProcess                 m_common_msg_process;
-		SdEventLoop*                m_loop;
+		SdEventLoop*                loop_;
+		TcpService                  tcpService_;
 
 		BuddyCache                  m_buddy_cache;
 

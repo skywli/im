@@ -1,9 +1,10 @@
 #ifndef _NODE_MGR_H_
 #define _NODE_MGR_H_
 
-#include <node.h>
+#include "common/proto/pdu_base.h"
+#include "node.h"
 #include <list>
-#include <pdu_base.h>
+
 //#include <service_node.h>
 
 #define   SOCK_CONNECTED     1     
@@ -96,6 +97,6 @@ private:
 
 	//record cur node access node 
 	std::list<NodeInstance*>         m_access_node_list;
-	SdEventLoop*                     m_loop;
+	SdEventLoop*                     loop_;
 };
 #endif

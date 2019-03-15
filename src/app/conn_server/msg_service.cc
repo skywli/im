@@ -2,7 +2,7 @@
 #include "log_util.h"
 #include "config_file_reader.h"
 #include "IM.Basic.pb.h"
-#include <conn_service.h>
+#include "conn_service.h"
 #include <node_mgr.h>
 #include "log_util.h"
 #include <string.h>
@@ -16,7 +16,7 @@ using namespace com::proto::basic;
 * PDU½âÎö
 */
 
-MsgService::MsgService() {
+MsgService::MsgService():loop_(getEventLoop()), tcpService_(this, loop_) {
 	m_cur_dispatch = 0;
 	m_pNode = CNode::getInstance();
 }
@@ -36,11 +36,9 @@ int MsgService::init(SdEventLoop* loop, ConnService*  conn )
 		LOGE("not config inner ip or port");
 		return -1;
 	}
-	m_loop = loop;
 	m_connService = conn;
-	TcpService::init(loop);
 	 NodeMgr::getInstance()->init(loop,NULL,NULL);
-     m_pNode->init(this);
+     m_pNode->init(&tcpService_);
 	NodeMgr::getInstance()->setConnectionStateCb(connectionStateEventCb, this);
 	return 0;
 }
@@ -48,7 +46,7 @@ int MsgService::init(SdEventLoop* loop, ConnService*  conn )
 int MsgService::start() {
 
 	LOGD("connect server listen on %s:%d", m_ip.c_str(), m_port);
-	int res=TcpService::StartServer(m_ip, m_port);
+	int res= tcpService_.listen(m_ip, m_port);
 	if (res == -1) {
 		LOGE("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);
 	}
@@ -120,7 +118,7 @@ int MsgService::recvClientMsg(int sockfd, PDUBase & base)
 		LOGW("not find dispatch node");
 		return -1;
 	}
-	if (Send(fd, pdu) == -1) {
+	if (tcpService_.Send(fd, pdu) == -1) {
 		LOGE("send msg to dispatch fail");
 		return -1;
 	}
@@ -145,7 +143,7 @@ int MsgService::randomGetSock()
 }
 
 //recv dispatch msg
-void MsgService::OnRecv(int sockfd, PDUBase* base) {
+void MsgService::onData(int sockfd, PDUBase* base) {
 	SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
 	int cmd = base->command_id;
 	switch (cmd) {
@@ -160,24 +158,12 @@ void MsgService::OnRecv(int sockfd, PDUBase* base) {
 	delete base;
 }
 
-void MsgService::OnConn(int sockfd) {
-	/*Node* node = new Node(sockfd);
-	m_nodes.push_back(node);*/
-}
-
-void MsgService::OnDisconn(int sockfd) {
-	/*auto it = m_nodes.begin();
-	while (it != m_nodes.end()) {
-		SNode* node = *it;
-		if (node->sid == sockfd ) {
-			m_nodes.erase(it);
-			delete node;
-			return;
-		}
-		++it;
-	}*/
-	m_pNode->setNodeDisconnect(sockfd);
-    CloseFd(sockfd);
+void MsgService::onEvent(int fd, ConnectionEvent event)
+{
+	if (event == Disconnected) {
+		m_pNode->setNodeDisconnect(fd);
+		tcpService_.closeSocket(fd);
+	}
 }
 
 

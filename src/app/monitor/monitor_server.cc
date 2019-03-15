@@ -10,8 +10,8 @@ using namespace com::proto::basic;
 using namespace com::proto::server;
 
 
-MonitorServer::MonitorServer(){
-    m_server = NULL;
+MonitorServer::MonitorServer() :loop_(getEventLoop()), tcpService_(this, loop_) {
+ 
 }
 
 int MonitorServer::init()
@@ -22,20 +22,17 @@ int MonitorServer::init()
         LOGD("not config ip or port");
         return -1;
     }
-    m_loop = getEventLoop();
-    m_loop->init(1024);
-    TcpService::init(m_loop);
-    return m_monitor.init(this);
+    return m_monitor.init(&tcpService_);
 
 }
 
 int MonitorServer::start() {
     LOGD("monitor server listen on %s:%d", m_ip.c_str(), m_port);
-    if (TcpService::StartServer(m_ip, m_port) == -1) {
+    if (tcpService_.listen(m_ip, m_port) == -1) {
         LOGD("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);
         return -1;
     }
-    PollStart();
+	tcpService_.run();
     return 0;
 }
 
@@ -57,13 +54,12 @@ void MonitorServer::OnRecv(int sockfd, PDUBase* base) {
     delete base;
 }
 
-void MonitorServer::OnConn(int sockfd) {
-
-}
-
-void MonitorServer::OnDisconn(int sockfd) {
-    m_monitor.disconnectNode(sockfd);
-    CloseFd(sockfd);
+void MonitorServer::onEvent(int fd, ConnectionEvent event)
+{
+	if (event == Disconnected) {
+		m_monitor.disconnectNode(fd);
+		tcpService_.closeSocket(fd);
+	}
 }
 
 int MonitorServer::clusterStatus(int sockfd, SPDUBase & base)
@@ -110,7 +106,7 @@ int MonitorServer::clusterStatus(int sockfd, SPDUBase & base)
 
     SPDUBase spdu;
     spdu.ResetPackBody(cluster_state, CID_CLUSTER_STATUS_RSP);
-    Send(sockfd, spdu);
+	tcpService_.Send(sockfd, spdu);
 }
 
 int MonitorServer::configSet(int sockfd, SPDUBase & base)
@@ -292,6 +288,6 @@ void MonitorServer::replyInfo(int sockfd,const char * content,...)
     rsp.set_reply(reply);
     SPDUBase spdu;
     spdu.ResetPackBody(rsp, CID_CONFIG_SET_RSP);
-    Send(sockfd, spdu);
+	tcpService_.Send(sockfd, spdu);
 }
 

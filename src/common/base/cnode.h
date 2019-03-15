@@ -1,10 +1,11 @@
 #ifndef _TOOLS_CNODE_H_
 #define _TOOLS_CNODE_H_
+
+#include "common/proto/pdu_base.h"
 #include <define.h>
 #include <list>
 #include <map>
 #include <string>
-#include <pdu_base.h>
 #include <mutex>
 #define CLUSTER_SLOTS                 256
 

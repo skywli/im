@@ -1,9 +1,9 @@
 #ifndef _CONNECTION_SERVER_H
 #define _CONNECTION_SERVER_H
 
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include "IM.Login.pb.h"
-#include "tcp_service.h"
-#include "block_tcp_client.h"
 #include <google/protobuf/message.h>
 #include <list>
 #include <string>
@@ -69,7 +69,7 @@ namespace msg_server {
 		std::list<User*>  user_list_;
 
 	};
-	class MsgServer :public TcpService {
+	class MsgServer :public Instance {
 	public:
 
 		static MsgServer* getInstance();
@@ -80,9 +80,8 @@ namespace msg_server {
 
 		void registCmd(int sid, int nid);
 
-		virtual void OnRecv(int _sockfd, PDUBase* _base);
-		virtual void OnConn(int _sockfd);
-		virtual void OnDisconn(int _sockfd);
+		virtual void onData(int _sockfd, PDUBase* _base);
+		virtual void onEvent(int fd, ConnectionEvent event);
 
 
 		int processInnerMsg(int sockfd, SPDUBase & base);
@@ -204,7 +203,8 @@ namespace msg_server {
 		MsgProcess                  m_chat_msg_process;
 
 		//	MsgProcess                 m_common_msg_process;
-		SdEventLoop*                m_loop;
+		SdEventLoop*                loop_;
+		TcpService                 tcpService_;
 
 		UserCache                  m_user_cache;
 

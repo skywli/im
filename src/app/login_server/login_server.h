@@ -1,7 +1,8 @@
 #ifndef _CONNECTION_SERVER_H
 #define _CONNECTION_SERVER_H
 
-#include "tcp_service.h"
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include <list>
 #include <string>
 #include <pthread.h>
@@ -28,8 +29,7 @@ class NodeConnectedState;
 
 typedef Lru<std::string, User*> User_Map_t;
 typedef std::unordered_map<int, std::list<std::string>> Node_User_list;
-class LoginServer:public TcpService {
-
+class LoginServer:public Instance {
 
 	//who connect me
 private:
@@ -44,9 +44,8 @@ public:
 	int init();
 	void start();
 
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
-    virtual void OnConn(int _sockfd);
-    virtual void OnDisconn(int _sockfd);
+	virtual void onData(int _sockfd, PDUBase* _base);
+	virtual void onEvent(int fd, ConnectionEvent event);
 
 private:
 	
@@ -95,8 +94,8 @@ private:
 	
 	MsgProcess                 m_process[LOGIN_THREAD];
 	StateService               m_stateService;
-	SdEventLoop*               m_loop;
-
+	SdEventLoop*               loop_;
+	TcpService                 tcpService_;
 	atomic_int                 m_onliners;
 	
 

@@ -24,7 +24,7 @@ namespace buddy{
 	static  const int db_index_im_msg = 2;
 	static const int db_index_offline_msg = 15;
 	static const int db_index_user_info = 3;
-BuddyServer::BuddyServer() {
+BuddyServer::BuddyServer() :loop_(getEventLoop()), tcpService_(this, loop_) {
     m_cur_index_ = 0;
     m_node_id_=0;
     m_lastTime = 0;
@@ -81,23 +81,20 @@ int BuddyServer::init()
     m_storage_msg_works = new ThreadPool(1);//save msg redis;
     m_chat_msg_process.init(ProcessClientMsg,2);
 
-    m_loop = getEventLoop();
-    m_loop->init(1024);
-    TcpService::init(m_loop);
 	std::string dbproxy_ip = ConfigFileReader::getInstance()->ReadString(CONF_DBPROXY_IP);
 	short dbproxy_port = ConfigFileReader::getInstance()->ReadInt(CONF_DBPROXY_PORT);
-	m_dbproxy_fd = StartClient(dbproxy_ip, dbproxy_port);
+	m_dbproxy_fd = tcpService_.connect(dbproxy_ip, dbproxy_port);
 	if (m_dbproxy_fd == -1) {
 		LOGE("connect dbproxy(addr: %s:%d) fail",dbproxy_ip.c_str(),dbproxy_port);
 //		return -1;
 	}
     //CreateTimer(1000, Timer, this);
-    m_pNode->init(this);
-    NodeMgr::getInstance()->init( m_loop, innerMsgCb, this);
+    m_pNode->init(&tcpService_);
+    NodeMgr::getInstance()->init( loop_, innerMsgCb, this);
     NodeMgr::getInstance()->setConnectionStateCb(connectionStateEvent, this);
-	CreateTimer(1000, Timer, this);
-
+	loop_->createTimeEvent(1000, Timer, this);
 }
+
 void BuddyServer::Timer(int fd, short mask, void * privdata)
 {
 	BuddyServer* pInstance = reinterpret_cast<BuddyServer*>(privdata);
@@ -111,7 +108,7 @@ void BuddyServer::cron()
 		std::string dbproxy_ip = ConfigFileReader::getInstance()->ReadString(CONF_DBPROXY_IP);
 		short dbproxy_port = ConfigFileReader::getInstance()->ReadInt(CONF_DBPROXY_PORT);
         if(dbproxy_ip!=""){
-		m_dbproxy_fd = StartClient(dbproxy_ip, dbproxy_port);
+		m_dbproxy_fd = tcpService_.connect(dbproxy_ip, dbproxy_port);
 		if (m_dbproxy_fd == -1) {
 			LOGE("connect dbproxy(addr: %s:%d) fail", dbproxy_ip.c_str(), dbproxy_port);
 		}
@@ -151,8 +148,8 @@ void BuddyServer::start() {
     m_chat_msg_process.start();
     sleep(1);
     LOGD("BuddyServer listen on %s:%d", m_ip.c_str(), m_port);
-    TcpService::StartServer(m_ip, m_port);
-    PollStart();
+	tcpService_.listen(m_ip, m_port);
+	tcpService_.run();
 }
 
 extern int total_recv_pkt;
@@ -192,7 +189,7 @@ void BuddyServer::registCmd(int sid, int nid)
     NodeMgr::getInstance()->sendNode(sid, nid, spdu);
 }
 
-void BuddyServer::OnRecv(int sockfd, PDUBase* base) {
+void BuddyServer::onData(int sockfd, PDUBase* base) {
     SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
     int cmd = spdu->command_id;
 
@@ -216,16 +213,19 @@ void BuddyServer::OnRecv(int sockfd, PDUBase* base) {
     }
 }
 
-void BuddyServer::OnConn(int sockfd) {
-    //LOGD("建立连接fd:%d", sockfd);
+void BuddyServer::onEvent(int fd, ConnectionEvent event)
+{
+	if (event ==Disconnected ) {
+		if (sockfd == m_dbproxy_fd) {
+			m_dbproxy_fd = -1;
+		}
+		m_pNode->setNodeDisconnect(sockfd);
+		tcpService_.closeSocket(sockfd);
+	}
 }
 
 void BuddyServer::OnDisconn(int sockfd) {
-	if (sockfd == m_dbproxy_fd) {
-		m_dbproxy_fd = -1;
-	}
-    m_pNode->setNodeDisconnect(sockfd);
-    CloseFd(sockfd);
+	
 }
 
 /* ................handler msg recving from dispatch.............*/
@@ -330,7 +330,7 @@ void BuddyServer::orgListReq(int sockfd, SPDUBase&  base) {
 	}
     LOGD("orgListReq orgid:%s",req.org_id().c_str());
 	
-	Send(m_dbproxy_fd, base);
+	tcpService_.Send(m_dbproxy_fd, base);
 }
 
 void BuddyServer::orgListRsp(int sockfd, SPDUBase&  base) {
@@ -444,7 +444,7 @@ void BuddyServer::userInfoReq(int sockfd, SPDUBase&  base) {
 	if (request.user_item_list_size() > 0) {
 		LOGD("query (num:%d) users_info from ice", request.user_item_list_size());
 		ResetPackBody(base, request, CID_USER_INFO_REQ);
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 	}
 	if (rsp.user_info_list_size() > 0) {
 		ResetPackBody(base, rsp, CID_USER_INFO_RSP);
@@ -517,7 +517,7 @@ void BuddyServer::buddyReqListReq(int sockfd, SPDUBase&  base) {
 		}
 		else {
 			LOGE("get user[%s] buddylist fail,send db get buddylist", user_id.c_str());
-			Send(m_dbproxy_fd, base);
+			tcpService_.Send(m_dbproxy_fd, base);
 			return;
 		}
 	}
@@ -575,7 +575,7 @@ void  BuddyServer::buddyListReq(const std::string& user_id, int sockfd, SPDUBase
 	IMGetBuddyReqListReq req;
 	req.set_user_id(user_id);
 	ResetPackBody(request, req, CID_S2S_BUDDY_LIST_REQ);
-	Send(m_dbproxy_fd, request);
+	tcpService_.Send(m_dbproxy_fd, request);
 }
 
 bool BuddyServer::buddyListRsp(int sockfd, SPDUBase&  base)

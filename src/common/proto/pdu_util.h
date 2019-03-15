@@ -1,7 +1,7 @@
 #ifndef _PDU_UTIL_H
 #define _PDU_UTIL_H
 
-#include "base/pdu_base.h"
+#include "pdu_base.h"
 
 class PduUtil {
 public:

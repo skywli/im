@@ -14,7 +14,7 @@
 #include <IM.Group.pb.h>
 #include <IM.Msg.pb.h>
 #include <IM.Redis.pb.h>
-
+#include "common/event/sd_event_loop.h"
 using namespace com::proto::basic;
 using namespace com::proto::group;
 using namespace com::proto::msg;
@@ -37,12 +37,15 @@ namespace group {
 		int cmd;
 		handlerCb cb;
 	} * pCmdHandler;
-	GroupServer::GroupServer() {
+	GroupServer::GroupServer():m_loop(getEventLoop()),tcpService_(this){
 		m_cur_index_ = 0;
         m_node_id_=0;
 		m_lastTime = 0;
 		m_pNode = CNode::getInstance();
 		m_dbproxy_fd = -1;
+		
+		m_loop->init(1024);
+		tcpService_.init(m_loop);
 	}
 
 	int GroupServer::sendConn(SPDUBase& base)
@@ -93,22 +96,20 @@ namespace group {
 												}*/
 		m_chat_msg_process.init(ProcessClientMsg);
 
-		m_loop = getEventLoop();
-		m_loop->init(1024);
-		TcpService::init(m_loop);
+		
 		std::string dbproxy_ip = ConfigFileReader::getInstance()->ReadString(CONF_DBPROXY_IP);
 		short dbproxy_port = ConfigFileReader::getInstance()->ReadInt(CONF_DBPROXY_PORT);
-		m_dbproxy_fd = StartClient(dbproxy_ip, dbproxy_port);
+		m_dbproxy_fd = tcpService_.connect(dbproxy_ip, dbproxy_port);
 		if (m_dbproxy_fd == -1) {
 			LOGE("connect dbproxy(addr: %s:%d) fail", dbproxy_ip.c_str(), dbproxy_port);
 			//		return -1;
 		}
 		
 		//CreateTimer(1000, Timer, this);
-		m_pNode->init(this);
+		m_pNode->init(&tcpService_);
 		NodeMgr::getInstance()->init(m_loop, innerMsgCb, this);
 		NodeMgr::getInstance()->setConnectionStateCb(connectionStateEvent, this);
-		CreateTimer(1000, Timer, this);
+		m_loop->createTimeEvent(1000, Timer, this);
 		initCmdTable();
 
 	}
@@ -152,7 +153,7 @@ namespace group {
 			std::string dbproxy_ip = ConfigFileReader::getInstance()->ReadString(CONF_DBPROXY_IP);
 			short dbproxy_port = ConfigFileReader::getInstance()->ReadInt(CONF_DBPROXY_PORT);
 			if (dbproxy_ip != "") {
-				m_dbproxy_fd = StartClient(dbproxy_ip, dbproxy_port);
+				m_dbproxy_fd = tcpService_.connect(dbproxy_ip, dbproxy_port);
 				if (m_dbproxy_fd == -1) {
 					LOGE("connect dbproxy(addr: %s:%d) fail", dbproxy_ip.c_str(), dbproxy_port);
 				}
@@ -195,8 +196,8 @@ namespace group {
 		m_chat_msg_process.start();
 		sleep(1);
 		LOGD("GroupServer listen on %s:%d", m_ip.c_str(), m_port);
-		TcpService::StartServer(m_ip, m_port);
-		PollStart();
+		tcpService_.listen(m_ip, m_port);
+		tcpService_.run();
 	}
 
 	void GroupServer::connectionStateEvent(NodeConnectedState* state, void* arg)
@@ -250,7 +251,7 @@ namespace group {
 		NodeMgr::getInstance()->sendNode(sid, nid, spdu);
 	}
 
-	void GroupServer::OnRecv(int sockfd, PDUBase* base) {
+	void GroupServer::onData(int sockfd, PDUBase* base) {
 		SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
 		int cmd = spdu->command_id;
 
@@ -267,17 +268,15 @@ namespace group {
         }
 	}
 
-	void GroupServer::OnConn(int sockfd) {
-		//LOGD("建立连接fd:%d", sockfd);
-	}
-
-	void GroupServer::OnDisconn(int sockfd) {
-		if (sockfd == m_dbproxy_fd) {
-			m_dbproxy_fd = -1;
+	void GroupServer::onEvent(int _sockfd, ConnectionEvent event)
+	{
+		if (event == Disconnected) {
+			if (sockfd == m_dbproxy_fd) {
+				m_dbproxy_fd = -1;
+			}
+			m_pNode->setNodeDisconnect(sockfd);
+			closeSocket(sockfd);
 		}
-		
-		m_pNode->setNodeDisconnect(sockfd);
-		CloseFd(sockfd);
 	}
 
 	/* ................handler msg recving from dispatch.............*/
@@ -438,7 +437,7 @@ namespace group {
 		if (user->group_list.size() == 0) {
 			if (-1==getUserGroupList(user)) {
 				LOGD("get grouplist fail,send db send db get grouplist");
-				Send(m_dbproxy_fd, base);
+				tcpService_.Send(m_dbproxy_fd, base);
 				return true;
 			}
 		}
@@ -658,7 +657,7 @@ namespace group {
 			}
 			else {
 				LOGE("get group[%d] member fail,send db get groupmember", group_id);
-				Send(m_dbproxy_fd, base);
+				tcpService_.Send(m_dbproxy_fd, base);
 				return true;
 			}
 		}
@@ -706,7 +705,7 @@ namespace group {
 			LOGD("user_id:%s", member_list[i].member_id().c_str());
 		}
 		
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 	}
 
 	bool GroupServer::createGroupRsp(int sockfd, SPDUBase&  base)
@@ -794,7 +793,7 @@ namespace group {
 			getGroupMember(pGroup);
 		}
 		//发给db
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 		return true;
 	}
 
@@ -855,7 +854,7 @@ namespace group {
 	bool GroupServer::groupInfoModifyReq(int sockfd, SPDUBase&  base)
 	{
 		LOGD("groupInfoModifyReq");
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 		return true;
 	}
 
@@ -940,7 +939,7 @@ namespace group {
 		if (pGroup->empty()) {
 			getGroupMember(pGroup);
 		}
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 	}
 
 	bool GroupServer::changeMemberRsp(int sockfd, SPDUBase&  base)
@@ -1102,7 +1101,7 @@ namespace group {
 		req.set_user_id("group");
 		req.set_group_id(group_id);
 		ResetPackBody(request, req, CID_S2S_GROUP_MEMBER_REQ);
-		Send(m_dbproxy_fd, request);
+		tcpService_.Send(m_dbproxy_fd, request);
 	}
 
 	bool GroupServer::queryGroupmemberRsp(int sockfd, SPDUBase&  base)
@@ -1166,7 +1165,7 @@ namespace group {
 	
 	bool GroupServer::groupSetReq(int sockfd, SPDUBase&  base) {
 		LOGD("groupSetReq");
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 	}
 
 	bool GroupServer::groupSetRsp(int sockfd, SPDUBase&  base) {
@@ -1177,7 +1176,7 @@ namespace group {
 	
 	bool GroupServer::changeMemberTransferRsp(int sockfd, SPDUBase&  base) {
 		LOGD("changeMemberTransferRsp");
-		Send(m_dbproxy_fd, base);
+		tcpService_.Send(m_dbproxy_fd, base);
 	}
 
 	bool GroupServer::changeMemberTransferReq(int sockfd, SPDUBase&  base) {

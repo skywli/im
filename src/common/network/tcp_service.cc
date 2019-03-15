@@ -28,13 +28,7 @@ void TcpService::accept_cb(int fd, short mask, void* privdata) {
 void TcpService::write(Connection* conn){
 	int ret = conn->write();
 	if (IO_ERROR == ret) {
-	
 		LOGE("fd=%d send error", conn->fd);
-
-	}
-	else if (IO_CLOSED == ret) {
-		
-		LOGE("fd=%d close", conn->fd);
 	}
 	else {
         //we must lock before check conn whether empty , in case  when conn is empty  then add msg to conn,but here delete write event;
@@ -46,12 +40,12 @@ void TcpService::write(Connection* conn){
 	}
 
 	// write error
-	/*aeDeleteFileEvent(m_loop,conn->fd, AE_READABLE | AE_WRITABLE);
+	/*aeDeleteFileEvent(loop_,conn->fd, AE_READABLE | AE_WRITABLE);
 	close(conn->fd);
     m_conns.remove(conn->fd);
 	delete conn;*/
 		
-    OnDisconn(conn->fd);
+    instance_->onEvent(conn->fd, RemoteClose);
 }
 
 void TcpService::write_cb(int fd, short mask, void* privdata)
@@ -67,7 +61,7 @@ void TcpService::write_cb(int fd, short mask, void* privdata)
     }
 }
 
-int TcpService::StartClient(std::string _ip, short _port)
+int TcpService::connect(std::string _ip, short _port)
 {
 	struct sockaddr_in serveraddr;
 
@@ -131,27 +125,20 @@ int TcpService::StartClient(std::string _ip, short _port)
 	std::lock_guard<std::recursive_mutex> lock_1(m_ev_mutex);
 	 m_conns.insert(std::pair<int, Connection*>(fd, conn));
 	
-	m_loop->createFileEvent(fd, SD_READABLE, read_cb, conn);
+	loop_->createFileEvent(fd, SD_READABLE, read_cb, conn);
     return fd;
 }
 
 long long TcpService::CreateTimer(long long milliseconds, sdTimeProc * proc, void * clientData)
 {
-	return m_loop->createTimeEvent(milliseconds, proc, clientData);
+	return loop_->createTimeEvent(milliseconds, proc, clientData);
 }
 
 void TcpService:: delEvent(int fd,int mask){
      std::lock_guard<std::recursive_mutex> lock_1(m_ev_mutex);
-	m_loop->deleteFileEvent( fd, mask);
+	loop_->deleteFileEvent( fd, mask);
 }
 
-void TcpService::close_cb(int _sockfd) {
-    /*
-     * close the socket, we are done with it
-     * poll_event_remove(poll_event, sockfd);
-     */
-    OnDisconn(_sockfd);
-}
 
 void TcpService::parse(Connection* conn) {
 	int fd = conn->fd;
@@ -176,7 +163,7 @@ void TcpService::parse(Connection* conn) {
 						conn->recv_pkt++;
 						data += pkt_len;
 							//	msg_info(msg);
-						OnRecv(fd, pdu);
+						instance_->onData(fd, pdu);
 					}
 					//not enough a pkt ;
 					else {
@@ -222,7 +209,7 @@ void TcpService::parse(Connection* conn) {
 				conn->less_pkt_len = 0;
 				conn->recv_pkt++;
 				//msg_info(msg);
-				OnRecv(fd, pdu);
+				instance_->onData(fd, pdu);
 			}
 			else {
 				conn->less_pkt_len -= conn->buf_len;
@@ -258,32 +245,22 @@ void TcpService::read_cb(int fd, short mask, void* privdata) {
 	//TODO
     TcpService* pInstance=reinterpret_cast<TcpService*>(conn->pInstance);
     if(pInstance){
-        pInstance->OnDisconn(conn->fd);
-        pInstance->CloseFd(conn->fd);
+        pInstance->instance_->onEvent(conn->fd,Disconnected);
+        pInstance->closeSocket(conn->fd);
     }
     else{
         LOGE("tcpservice is null");
     }
 
-    /*aeDeleteFileEvent(m_loop, conn->fd, AE_READABLE);
+    /*aeDeleteFileEvent(loop_, conn->fd, AE_READABLE);
 	close(conn->fd);
     m_conns.remove(conn->fd);
 	delete conn;*/
 }
 
-int TcpService::init(SdEventLoop * loop)
-{
-    if(m_loop){
-        delete m_loop;
-    }
-	m_loop = loop;
-}
-
-TcpService::TcpService() {
+TcpService::TcpService(Instance* instance, SdEventLoop * loop):instance_(instance) {
     listen_num = 1;
-    //m_loop=getEventLoop();
-    //m_loop->init(1024);
-    m_loop=NULL;
+	loop_ = loop;
 }
 
 TcpService::~TcpService() {
@@ -294,7 +271,7 @@ TcpService::~TcpService() {
 	}
 }
 
-int TcpService::StartServer(std::string _ip, short _port) {
+int TcpService::listen(std::string _ip, short _port) {
   
 	struct sockaddr_in serveraddr;
 
@@ -317,23 +294,23 @@ int TcpService::StartServer(std::string _ip, short _port) {
 	if (setnonblocking(listen_sockfd_) == -1) {
 		return -1;
 	}
-	m_loop->createFileEvent(listen_sockfd_, SD_READABLE, accept_cb, this);
+	loop_->createFileEvent(listen_sockfd_, SD_READABLE, accept_cb, this);
 }
 
-void TcpService::PollStart() {
+void TcpService::run() {
 
-    m_loop->main();
+    loop_->main();
 	LOGD("server stop...");
 }
 
 void TcpService::stop()
 {
-	m_loop->stop();
+	loop_->stop();
 }
 
-void TcpService::CloseFd(int _sockfd) {
+void TcpService::closeSocket(int _sockfd) {
 	std::lock_guard<std::recursive_mutex> lock_1(m_ev_mutex);
-    m_loop->deleteFileEvent(_sockfd, SD_READABLE | SD_WRITABLE);
+    loop_->deleteFileEvent(_sockfd, SD_READABLE | SD_WRITABLE);
     std::map<int,Connection*>::iterator it=m_conns.find(_sockfd);
     if(it!=m_conns.end()){
         delete it->second;
@@ -371,7 +348,6 @@ void TcpService::Accept(int listener)
         LOGD("accept new connection [fd:%d,addr:%s:%d]",fd,inet_ntoa(ss.sin_addr),ntohs(ss.sin_port));
 		setnonblocking(fd);
 		anetKeepAlive(fd,10*60);
-		OnConn(fd);
 		{
 			Connection* conn = new (std::nothrow)Connection;
 			if (NULL == conn) {
@@ -385,11 +361,11 @@ void TcpService::Accept(int listener)
             if(!res.second){
                 LOGE("insert fail");
             }
-			m_loop->createFileEvent( fd, SD_READABLE, read_cb, conn);
+			loop_->createFileEvent( fd, SD_READABLE, read_cb, conn);
 
 		}
+		instance_->onEvent(fd, Connected);
     }
-		//LOGW("fd=%d connect", fd);
 	
 }
 
@@ -416,7 +392,7 @@ int TcpService::Send(int _sockfd, const char *_buffer, int _length) {
 			std::map<int, Connection*>::iterator it = m_conns.find(_sockfd);
 			if (it != m_conns.end()) {
 				it->second->push(msg);
-				m_loop->createFileEvent( _sockfd, SD_WRITABLE, write_cb, it->second);
+				loop_->createFileEvent( _sockfd, SD_WRITABLE, write_cb, it->second);
 			}
 			else {
 				LOGE("not find socket");
@@ -435,7 +411,7 @@ int TcpService::Send(int _sockfd,  msg_t _msg, int _length) {
 		std::map<int, Connection*>::iterator it = m_conns.find(_sockfd);
 		if (it != m_conns.end()) {
 			it->second->push(_msg);
-			m_loop->createFileEvent(_sockfd, SD_WRITABLE, write_cb, it->second);
+			loop_->createFileEvent(_sockfd, SD_WRITABLE, write_cb, it->second);
 		}
 		else {
 			LOGE("not find socket:%d",_sockfd);
