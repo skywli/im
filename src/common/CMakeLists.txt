@@ -23,9 +23,13 @@ INCLUDE_DIRECTORIES("${COMMON}")
 FILE(GLOB root "${COMMON}/*.cc")
 
 INCLUDE_DIRECTORIES("${COMMON}/core/")
+FILE(GLOB core "${COMMON}/core/*.cc")
 INCLUDE_DIRECTORIES("${COMMON}/event/")
+FILE(GLOB event "${COMMON}/event/*.cc")
 INCLUDE_DIRECTORIES("${COMMON}/network/")
+FILE(GLOB network "${COMMON}/network/*.cc")
 INCLUDE_DIRECTORIES("${COMMON}/proto/")
+FILE(GLOB proto "${COMMON}/proto/*.cc")
 # dir base
 INCLUDE_DIRECTORIES("${COMMON}/base/")
 FILE(GLOB base "${COMMON}/base/*.cc")
@@ -58,5 +62,5 @@ FILE(GLOB json "${COMMON}/third/json/*.cpp")
 
 LINK_DIRECTORIES("/usr/local/lib/")
 
-ADD_LIBRARY(im SHARED  ${root} ${threadpool}  ${xml}  ${redis}  ${base} ${protobuf} ${node} ${json} )
+ADD_LIBRARY(im SHARED  ${root} ${threadpool}  ${xml}  ${redis}  ${base} ${protobuf} ${node} ${core} ${network} ${event} ${proto} ${json})
 INSTALL(FILES libim.so   DESTINATION lib)

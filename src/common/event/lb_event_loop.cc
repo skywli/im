@@ -20,14 +20,18 @@
 #include<cstring>
 
 #include "lb_event_loop.h"
-
+#define DEFAULT_MAX_CONN  1024
 
 LbEventLoop::LbEventLoop()
 {
-    m_size = DEFAULT_MAX_CONN;
+    m_size = DEFAULT_MAX_CONN+ MIN_FD_SIZE;
     m_timeid = 0;
-    m_base=NULL;
-    m_events=NULL;
+	evthread_use_pthreads();
+	m_base = event_base_new();
+	m_events = (lbFileEvent*)malloc(sizeof(lbFileEvent)*m_size);
+	for (int i = 0; i<m_size; i++) {
+		m_events[i].mask = SD_NONE;
+	}
 }
 
 LbEventLoop::~LbEventLoop()
@@ -42,24 +46,16 @@ LbEventLoop::~LbEventLoop()
 
 int LbEventLoop::init(int size)
 {
-    m_size = size + MIN_FD_SIZE;
-#ifdef WIN32
-    WSADATA		wsaData;
-    DWORD		Ret;
-    if ((Ret = WSAStartup(MAKEWORD(2, 2), &wsaData)) != 0)
-    {
-        printf("WSAStartBug\n");
-    }
-    evthread_use_windows_threads();
-#else
-    evthread_use_pthreads();
-#endif
-    m_base = event_base_new();
-    m_events = (lbFileEvent*)malloc(sizeof(lbFileEvent)*m_size);
-    for(int i=0;i<m_size;i++){
-        m_events[i].mask=SD_NONE;
-    }
-    return 0;
+	m_size = size + MIN_FD_SIZE;
+	if (m_events) {
+		free(m_events);
+	}
+	m_events = (lbFileEvent*)malloc(sizeof(lbFileEvent)*m_size);
+	for (int i = 0; i<m_size; i++) {
+		m_events[i].mask = SD_NONE;
+	}
+	return 0;
+  
 }
 
 int LbEventLoop::createFileEvent(sd_socket_t fd, short mask, sdFileProc * proc, void * clientData)

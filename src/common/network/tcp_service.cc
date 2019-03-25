@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <sys/select.h>
 #include "connection.h"
+
 #define MAX_ACCEPTS_PER_CALL  1000
 
 extern int total_recv_pkt;
@@ -37,15 +38,7 @@ void TcpService::write(Connection* conn){
                 delEvent(conn->fd,SD_WRITABLE);
 		}
 		return;
-	}
-
-	// write error
-	/*aeDeleteFileEvent(loop_,conn->fd, AE_READABLE | AE_WRITABLE);
-	close(conn->fd);
-    m_conns.remove(conn->fd);
-	delete conn;*/
-		
-    instance_->onEvent(conn->fd, RemoteClose);
+	}	
 }
 
 void TcpService::write_cb(int fd, short mask, void* privdata)
@@ -81,7 +74,7 @@ int TcpService::connect(std::string _ip, short _port)
 	serveraddr.sin_port = htons(_port);
 
 	setnonblocking(fd);
-	if (connect(fd, (struct sockaddr*)&serveraddr, sizeof(serveraddr)) ==-1){
+	if (::connect(fd, (struct sockaddr*)&serveraddr, sizeof(serveraddr)) ==-1){
 		if (errno == EINPROGRESS) {
 			fd_set set;
 			FD_ZERO(&set);
@@ -518,7 +511,7 @@ int TcpService::bindsocket(int _sockfd, const char *_pAddr, int _port) {
 }
 
 int TcpService::listensocket(int _sockfd, int _conn_num) {
-	if (listen(_sockfd, _conn_num) < 0) {
+	if (::listen(_sockfd, _conn_num) < 0) {
 		return -1;
 	}
 	return 0;

@@ -37,15 +37,15 @@ namespace group {
 		int cmd;
 		handlerCb cb;
 	} * pCmdHandler;
-	GroupServer::GroupServer():m_loop(getEventLoop()),tcpService_(this){
+	GroupServer::GroupServer():loop_(getEventLoop()),tcpService_(this,loop_){
 		m_cur_index_ = 0;
         m_node_id_=0;
 		m_lastTime = 0;
 		m_pNode = CNode::getInstance();
 		m_dbproxy_fd = -1;
 		
-		m_loop->init(1024);
-		tcpService_.init(m_loop);
+		loop_->init(1024);
+		
 	}
 
 	int GroupServer::sendConn(SPDUBase& base)
@@ -107,9 +107,9 @@ namespace group {
 		
 		//CreateTimer(1000, Timer, this);
 		m_pNode->init(&tcpService_);
-		NodeMgr::getInstance()->init(m_loop, innerMsgCb, this);
+		NodeMgr::getInstance()->init(loop_, innerMsgCb, this);
 		NodeMgr::getInstance()->setConnectionStateCb(connectionStateEvent, this);
-		m_loop->createTimeEvent(1000, Timer, this);
+		loop_->createTimeEvent(1000, Timer, this);
 		initCmdTable();
 
 	}
@@ -268,14 +268,14 @@ namespace group {
         }
 	}
 
-	void GroupServer::onEvent(int _sockfd, ConnectionEvent event)
+	void GroupServer::onEvent(int fd, ConnectionEvent event)
 	{
 		if (event == Disconnected) {
-			if (sockfd == m_dbproxy_fd) {
+			if (fd == m_dbproxy_fd) {
 				m_dbproxy_fd = -1;
 			}
-			m_pNode->setNodeDisconnect(sockfd);
-			closeSocket(sockfd);
+			m_pNode->setNodeDisconnect(fd);
+			tcpService_.closeSocket(fd);
 		}
 	}
 
@@ -460,7 +460,7 @@ namespace group {
 					GroupInfo group_info;
 					if (!getGroupInfo(*it, group_info)) {
 						LOGD("get group[%d] info fail, send db get grouplist", *it);
-						Send(m_dbproxy_fd, base);
+						tcpService_.Send(m_dbproxy_fd, base);
 						return true;
 					}
 					//cache must update
@@ -541,7 +541,7 @@ namespace group {
 			GroupInfo group_info;
 			if (!getGroupInfo(group_id, group_info)) {
 				LOGD("get group[%d] info fail,send db get groupinfo", group_id);
-				Send(m_dbproxy_fd, base);
+				tcpService_.Send(m_dbproxy_fd, base);
 				return true;
 			}
 			//cache must update

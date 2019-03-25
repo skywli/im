@@ -216,16 +216,12 @@ void BuddyServer::onData(int sockfd, PDUBase* base) {
 void BuddyServer::onEvent(int fd, ConnectionEvent event)
 {
 	if (event ==Disconnected ) {
-		if (sockfd == m_dbproxy_fd) {
+		if (fd == m_dbproxy_fd) {
 			m_dbproxy_fd = -1;
 		}
-		m_pNode->setNodeDisconnect(sockfd);
-		tcpService_.closeSocket(sockfd);
+		m_pNode->setNodeDisconnect(fd);
+		tcpService_.closeSocket(fd);
 	}
-}
-
-void BuddyServer::OnDisconn(int sockfd) {
-	
 }
 
 /* ................handler msg recving from dispatch.............*/
@@ -641,7 +637,7 @@ void BuddyServer::optBuddyReq(int sockfd, SPDUBase&  base) {
 	const std::string& src_user_id = req.src_user_id();
 	const std::string& dest_user_id = req.dest_user_id();
     LOGD("src_user_id(%s),dst_user_id(%s) optBuddyReq type(%d)",src_user_id.c_str(),dest_user_id.c_str(), type);
-	Send(m_dbproxy_fd, base);
+	tcpService_.Send(m_dbproxy_fd, base);
 }
 
 void BuddyServer::optBuddyRsp(int sockfd, SPDUBase&  base) {

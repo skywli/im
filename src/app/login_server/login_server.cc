@@ -66,7 +66,7 @@ int LoginServer::init()
 	}
 	
 	m_pNode->init(&tcpService_);
-	m_stateService.init(this,m_pNode);
+	m_stateService.init(&tcpService_,m_pNode);
 	NodeMgr::getInstance()->init(loop_, innerMsgCb, this);
 	NodeMgr::getInstance()->setConnectionStateCb(connectionStateEvent, this);
 }

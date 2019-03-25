@@ -12,7 +12,7 @@ public:
 	int init();
 	int start();
 
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
+	virtual void onData(int _sockfd, PDUBase* _base);
 	virtual void onEvent(int fd, ConnectionEvent event);
 	
 	int clusterStatus(int sockfd, SPDUBase& base);

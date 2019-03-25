@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include <pdu_base.h>
-#include <tcp_service.h>
+#include "common/proto/pdu_base.h"
+#include "common/network/tcp_service.h"
 #include <list>
 #define CLUSTER_SLOTS                 256
 

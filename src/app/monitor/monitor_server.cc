@@ -36,7 +36,7 @@ int MonitorServer::start() {
     return 0;
 }
 
-void MonitorServer::OnRecv(int sockfd, PDUBase* base) {
+void MonitorServer::onData(int sockfd, PDUBase* base) {
 
     SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
     int cmd = spdu->command_id;

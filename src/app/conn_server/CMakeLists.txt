@@ -15,6 +15,7 @@ endif()
 
 
 set(COMMON  "../../common")
+message(STATUS ${COMMON})
 #set(CMAKE_BUILD_TYPE debug)
 
 

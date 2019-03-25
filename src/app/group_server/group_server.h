@@ -199,7 +199,7 @@ namespace group {
 		MsgProcess                  m_chat_msg_process;
 
 		//	MsgProcess                 m_common_msg_process;
-		SdEventLoop*                m_loop;
+		SdEventLoop*                loop_;
 
 		UserCache                  m_user_cache;
 
