@@ -87,9 +87,11 @@ void DispatchServer::onData(int sockfd, PDUBase* base) {
 void DispatchServer::onEvent(int fd, ConnectionEvent event)
 {
 	//busi disconn
-	if(event==Disconnected)
-	m_pNode->setNodeDisconnect(fd);
-	tcpService_.closeSocket(fd);
+	if (event == Disconnected) {
+		m_pNode->setNodeDisconnect(fd);
+		tcpService_.closeSocket(fd);
+	}
+	
 }
 
 int DispatchServer::getsock(int cmd, int user_id)

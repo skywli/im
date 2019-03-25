@@ -16,7 +16,7 @@ using namespace com::proto::basic;
 * PDU½âÎö
 */
 
-MsgService::MsgService(SdEventLoop* loop, ConnService*  conn):loop_(loop), tcpService_(this, loop_) {
+MsgService::MsgService(SdEventLoop* loop, ConnService*  conn):loop_(loop), tcpService_(this, loop) {
 	m_connService = conn;
 	m_cur_dispatch = 0;
 	m_pNode = CNode::getInstance();
@@ -25,7 +25,6 @@ MsgService::MsgService(SdEventLoop* loop, ConnService*  conn):loop_(loop), tcpSe
 void MsgService::OnAccept(SdEventLoop * eventLoop, int fd, void * clientData, int mask)
 {
 }
-
 
 int MsgService::init( )
 {
@@ -45,7 +44,7 @@ int MsgService::init( )
 
 int MsgService::start() {
 
-	LOGD("connect server listen on %s:%d", m_ip.c_str(), m_port);
+	LOGD("msgService  listen on %s:%d", m_ip.c_str(), m_port);
 	int res= tcpService_.listen(m_ip, m_port);
 	if (res == -1) {
 		LOGE("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);

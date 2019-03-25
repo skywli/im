@@ -6,7 +6,7 @@
 #include <mutex>
 #include "base/hredis_base.h"
 #include <pthread.h>
-#define CZY_ORG_KEY          "czy_us_9959f117-df60-4d1b-a354-776c20ffb8c7"
+
 // redis key的过期时间(单位秒，默认2个月)
 #define REDIS_KEY_EXPIRE_DEFAULT 5184000
 

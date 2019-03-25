@@ -38,12 +38,9 @@ private:
 	std::string               m_ip;
 	int                       m_port;
 	Monitor                   m_monitor;
+	SdEventLoop*               loop_;
 	TcpService                  tcpService_;
-    SdEventLoop*               loop_;
-
-
-
-
+  
 };
 
 #endif

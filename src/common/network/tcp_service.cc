@@ -1,5 +1,6 @@
 #include "tcp_service.h"
 #include "log_util.h"
+#include <cerrno>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -158,11 +159,6 @@ void TcpService::read_cb(int fd, short mask, void* privdata) {
     else{
         LOGE("tcpservice is null");
     }
-
-    /*aeDeleteFileEvent(loop_, conn->fd, AE_READABLE);
-	close(conn->fd);
-    m_conns.remove(conn->fd);
-	delete conn;*/
 }
 
 TcpService::TcpService(Instance* instance, SdEventLoop * loop):instance_(instance) {
@@ -202,6 +198,7 @@ int TcpService::listen(std::string _ip, short _port) {
 		return -1;
 	}
 	loop_->createFileEvent(listen_sockfd_, SD_READABLE, accept_cb, this);
+	return 0;
 }
 
 void TcpService::run() {
@@ -223,6 +220,7 @@ void TcpService::closeSocket(int _sockfd) {
         delete it->second;
         m_conns.erase(it);
     }
+	LOGD("close sockfd");
     close(_sockfd);
 
     //LOGD("关闭sockfd:%d", _sockfd);
@@ -400,12 +398,12 @@ int TcpService::setnonblocking(int _sockfd) {
 	int opts;
 	opts = fcntl(_sockfd, F_GETFL);
 	if (opts < 0) {
-		LOGD("fcntl(sock, GETFL)");
+		LOGE("fcntl(sock, GETFL)");
 		return -1;
 	}
 	opts = opts | O_NONBLOCK;
 	if (fcntl(_sockfd, F_SETFL, opts) < 0) {
-		LOGD("fcntl(sock, SETFL, opts)");
+		LOGE("fcntl(sock, SETFL, opts)");
 		return -1;
 	}
 	return 0;
@@ -426,6 +424,7 @@ int TcpService::bindsocket(int _sockfd, const char *_pAddr, int _port) {
 
 int TcpService::listensocket(int _sockfd, int _conn_num) {
 	if (::listen(_sockfd, _conn_num) < 0) {
+		LOGD("listen fail");
 		return -1;
 	}
 	return 0;

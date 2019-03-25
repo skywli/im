@@ -13,7 +13,7 @@
 #define DB_INDEX_OFFLINEIM 15
 #define DB_INDEX_CZY 0
 #define STATE_EXPIRE_TIME    24*3600
-#define CZY_ORG_KEY          "czy_us_9959f117-df60-4d1b-a354-776c20ffb8c7"
+#define CZY_ORG_KEY          "userIds"
 
 #define DB_INDEX_BUDDY        1
 RedisClient::RedisClient() {

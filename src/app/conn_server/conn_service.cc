@@ -11,7 +11,7 @@
 using namespace com::proto::loadbalance;
 using namespace com::proto::login;
 using namespace com::proto::basic;
-static int maxclients = 500000;
+static int maxclients = 5000;
 static int sec_recv_pkt;
 static int total_recv_pkt;
 
@@ -37,7 +37,6 @@ int ConnService::init()
 		LOGE("not config out ip or port");
 		return -1;
 	}
-	
 	m_max_conn = maxclients + CONFIG_FDSET_INCR;
 	m_clients = new Client[sizeof(Client)*(m_max_conn+1)];
 	loop_->createTimeEvent(5000, Timer, this);

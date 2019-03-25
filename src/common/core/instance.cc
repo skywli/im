@@ -1,6 +1,7 @@
 #pragma once
 #include "instance.h"
-
+#include "log_util.h"
+#include <arpa/inet.h>
 void Instance::parse(Connection* conn) {
 	int fd = conn->fd;
 	char* data = conn->buf;
