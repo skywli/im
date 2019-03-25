@@ -16,7 +16,8 @@ using namespace com::proto::basic;
 * PDU解析
 */
 
-MsgService::MsgService():loop_(getEventLoop()), tcpService_(this, loop_) {
+MsgService::MsgService(SdEventLoop* loop, ConnService*  conn):loop_(loop), tcpService_(this, loop_) {
+	m_connService = conn;
 	m_cur_dispatch = 0;
 	m_pNode = CNode::getInstance();
 }
@@ -26,7 +27,7 @@ void MsgService::OnAccept(SdEventLoop * eventLoop, int fd, void * clientData, in
 }
 
 
-int MsgService::init(SdEventLoop* loop, ConnService*  conn )
+int MsgService::init( )
 {
 	// 读取route配置信息，进行连接
 	m_ip = ConfigFileReader::getInstance()->ReadString(CONF_LISTEN_IP);
@@ -36,8 +37,7 @@ int MsgService::init(SdEventLoop* loop, ConnService*  conn )
 		LOGE("not config inner ip or port");
 		return -1;
 	}
-	m_connService = conn;
-	 NodeMgr::getInstance()->init(loop,NULL,NULL);
+	 NodeMgr::getInstance()->init(loop_,NULL,NULL);
      m_pNode->init(&tcpService_);
 	NodeMgr::getInstance()->setConnectionStateCb(connectionStateEventCb, this);
 	return 0;

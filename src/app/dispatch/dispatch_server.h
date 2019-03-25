@@ -70,10 +70,10 @@ private:
 	std::string                         m_ip;
 	int                                 m_port;
 	
+	SdEventLoop*                        loop_;
 	TcpService                         tcpService_;
 //	std::list<Node*>                    m_nodes;//dispatch client
 	std::map<int, int>                  m_cmd_map;// cmd-sid
-	SdEventLoop*                        loop_;
 	 
 	std::map<int, std::list<Node*>>      m_services;
 	CNode*                                m_pNode;

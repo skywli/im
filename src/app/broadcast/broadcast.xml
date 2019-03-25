@@ -4,7 +4,7 @@
 	<monitor_ip>127.0.0.1</monitor_ip>
 	<monitor_port>8802</monitor_port>
 	<redis_ip>192.168.0.14</redis_ip>
-	<redis_port>6380</redis_port>
+	<redis_port>6379</redis_port>
 	  <!-- inner IP and port to listen for incoming broadcast broadcastections on -->
 	<ip>127.0.0.1</ip>
 	<port>8050</port>

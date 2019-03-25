@@ -22,9 +22,9 @@ private:
 		bool connected;
 	};
 public:
-	MsgService();
+	MsgService(SdEventLoop* loop, ConnService*  conn);
 	static void OnAccept(SdEventLoop * eventLoop, int fd, void * clientData, int mask);
-	int init(SdEventLoop * loop, ConnService * conn);
+	int init();
 	int start();
 
 	
@@ -44,8 +44,8 @@ public:
 	std::string m_ip;
 	int        m_port;
 	
-	TcpService                 tcpService_;
 	SdEventLoop*               loop_;
+	TcpService                 tcpService_;
 
 	ConnService*               m_connService;
 

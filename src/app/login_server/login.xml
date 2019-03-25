@@ -3,9 +3,9 @@
 	 <!-- IP/port the monitor is waiting for connections on -->
 	<monitor_ip>127.0.0.1</monitor_ip>
 	<monitor_port>8802</monitor_port>
-	<redis_ip>192.168.0.16</redis_ip>
-	<redis_port>6380</redis_port>
-    <redis_auth>ym1234</redis_auth>
+	<redis_ip>127.0.0.1</redis_ip>
+	<redis_port>6379</redis_port>
+    <redis_auth>123456</redis_auth>
 	
 	  <!-- IP and port to listen for incoming login connections on -->
 	<ip>127.0.0.1</ip>
@@ -34,8 +34,8 @@
 	<!-- other config-->
 	
 	<!--state broadcast-->
-	<state_ip>192.168.0.16</state_ip>
-	<state_port>6380</state_port>
-    <state_auth>ym1234</state_auth>
+	<state_ip>127.0.0.1</state_ip>
+	<state_port>6379</state_port>
+    <state_auth>123456</state_auth>
 </login>
 	

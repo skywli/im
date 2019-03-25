@@ -22,7 +22,7 @@ int total_send_pkt;
 #define CONFIG_FDSET_INCR  128
 #define CONF_CONN_LISTEN_IP  "listen_ip"
 #define CONF_CONN_LISTEN_PORT "listen_port"
-ConnService::ConnService() :loop_(getEventLoop()), tcpService_(this, loop_) {
+ConnService::ConnService() :loop_(getEventLoop()), tcpService_(this, loop_),m_msgService(loop_,this) {
 	loop_->init(m_max_conn);
 	m_conns = 0;
 	m_total_pkts = 0;
@@ -41,7 +41,7 @@ int ConnService::init()
 	m_max_conn = maxclients + CONFIG_FDSET_INCR;
 	m_clients = new Client[sizeof(Client)*(m_max_conn+1)];
 	loop_->createTimeEvent(5000, Timer, this);
-	return m_msgService.init(loop_, this);
+	return m_msgService.init();
 }
 
 int ConnService::start() {

@@ -8,7 +8,7 @@
 	<ip>127.0.0.1</ip>
 	<port>8040</port>
 	 <!-- outer IP and port to listen for incoming loadbalance loadbalanceections on -->
-	<out_ip>192.168.0.16</out_ip>
+	<out_ip>127.0.0.1</out_ip>
 	<out_port>8088</out_port>
 	<!-- loadbalance will loadbalanceect service -->
 	<conn_type>

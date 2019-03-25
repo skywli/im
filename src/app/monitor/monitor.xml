@@ -86,9 +86,9 @@
     <!-- redis config -->
     <!--<config>
         <redis>
-            <ip>192.168.0.16</ip>
-            <port>6380</port>
-            <passwd>ym1234</passwd>
+            <ip>127.0.0.1</ip>
+            <port>6379</port>
+            <passwd>123456</passwd>
         </redis>
     </config>-->
     <daemon>on</daemon>
