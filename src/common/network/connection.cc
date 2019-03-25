@@ -91,9 +91,6 @@ int Connection::write()
 				return IO_ERROR;
 			}
 		}
-		else if (nwritten == 0) {
-			return IO_CLOSED;
-		}
 		send_len += nwritten;
 
 		if (send_len == data_len) {

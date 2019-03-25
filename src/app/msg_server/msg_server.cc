@@ -30,7 +30,7 @@ namespace msg_server {
 			s->check_send_msg();
 		}
 	}
-	MsgServer::MsgServer() {
+	MsgServer::MsgServer() :loop_(getEventLoop()), tcpService_(this, loop_) {
 		m_cur_index_ = 0;
 		m_lastTime = 0;
 		m_pNode = CNode::getInstance();
@@ -99,15 +99,12 @@ namespace msg_server {
 			return -1;
 		}
 
-		m_loop = getEventLoop();
-		m_loop->init(1024);
-		TcpService::init(m_loop);
-		CreateTimer(50, Timer, this);
-		m_pNode->init(this);
+		loop_->createTimeEvent(50, Timer, this);
+		m_pNode->init(&tcpService_);
 		std::string mq_ip = ConfigFileReader::getInstance()->ReadString(CONF_MGQUEUE_IP);
 		short mq_port = ConfigFileReader::getInstance()->ReadInt(CONF_MGQUEUE_PORT);
-		m_mq_fd = StartClient(mq_ip, mq_port);
-		NodeMgr::getInstance()->init(m_loop, innerMsgCb, this);
+		m_mq_fd = tcpService_.connect(mq_ip, mq_port);
+		NodeMgr::getInstance()->init(loop_, innerMsgCb, this);
 		NodeMgr::getInstance()->setConnectionStateCb(connectionStateEvent, this);
 
 	}
@@ -116,8 +113,8 @@ namespace msg_server {
 		m_chat_msg_process.start();
 		sleep(1);
 		LOGD("MsgServer listen on %s:%d", m_ip.c_str(), m_port);
-		TcpService::StartServer(m_ip, m_port);
-		PollStart();
+		tcpService_.listen(m_ip, m_port);
+		tcpService_.run();
 	}
 
 	extern int total_recv_pkt;
@@ -151,7 +148,7 @@ namespace msg_server {
 		NodeMgr::getInstance()->sendNode(sid, nid, spdu);
 	}
 
-	void MsgServer::OnRecv(int sockfd, PDUBase* base) {
+	void MsgServer::onData(int sockfd, PDUBase* base) {
 		SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
 		int cmd = spdu->command_id;
 
@@ -174,16 +171,15 @@ namespace msg_server {
 		}
 	}
 
-	void MsgServer::OnConn(int sockfd) {
-		//LOGD("建立连接fd:%d", sockfd);
-	}
-
-	void MsgServer::OnDisconn(int sockfd) {
-		if (sockfd == m_mq_fd) {
-			m_mq_fd = -1;
+	void MsgServer::onEvent(int fd, ConnectionEvent event)
+	{
+		if (event == Disconnected) {
+			if (fd == m_mq_fd) {
+				m_mq_fd = -1;
+			}
+			m_pNode->setNodeDisconnect(fd);
+			tcpService_.closeSocket(fd);
 		}
-		m_pNode->setNodeDisconnect(sockfd);
-		CloseFd(sockfd);
 	}
 
 	/* ................handler msg recving from dispatch.............*/
@@ -354,7 +350,7 @@ namespace msg_server {
 		if (cmd == CID_CHAT_BUDDY || cmd == CID_CHAT_GROUP) {
             if(user_list->size()>0){
 			    base.ResetPackBody(push, cmd);
-			    Send(m_mq_fd, base);
+				tcpService_.Send(m_mq_fd, base);
             }
 		}
 		std::lock_guard<std::recursive_mutex> lock(m_msg_count_mutex_);
@@ -599,7 +595,7 @@ namespace msg_server {
 			std::string mq_ip = ConfigFileReader::getInstance()->ReadString(CONF_MGQUEUE_IP);
 			short mq_port = ConfigFileReader::getInstance()->ReadInt(CONF_MGQUEUE_PORT);
 			if (mq_ip != "") {
-				m_mq_fd = StartClient(mq_ip, mq_port);
+				m_mq_fd = tcpService_.connect(mq_ip, mq_port);
 				if (m_mq_fd == -1) {
 					LOGE("connect mq(addr: %s:%d) fail", mq_ip.c_str(), mq_port);
 				}

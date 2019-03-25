@@ -25,14 +25,13 @@ User::User(const std::string& user_id) {
 	userid_ = user_id;
 }
 
-LoginServer::LoginServer() {
-	m_loop = NULL;
+LoginServer::LoginServer() :loop_(getEventLoop()), tcpService_(this, loop_) {
 	m_pNode = CNode::getInstance();
 }
 
 LoginServer::~LoginServer()
 {
-	delete m_loop;
+	delete loop_;
 	auto it = m_user_map.begin();
 	while (it != m_user_map.end()) {
 		delete it->second;
@@ -66,12 +65,9 @@ int LoginServer::init()
 		m_process[i].init(ProcessClientMsg, 1);
 	}
 	
-	m_loop = getEventLoop();
-	m_loop->init(1024);
-	TcpService::init(m_loop);
-	m_pNode->init(this);
-	m_stateService.init(this,m_pNode);
-	NodeMgr::getInstance()->init(m_loop, innerMsgCb, this);
+	m_pNode->init(&tcpService_);
+	m_stateService.init(&tcpService_,m_pNode);
+	NodeMgr::getInstance()->init(loop_, innerMsgCb, this);
 	NodeMgr::getInstance()->setConnectionStateCb(connectionStateEvent, this);
 }
 
@@ -81,14 +77,22 @@ void LoginServer::start() {
 	}
 	sleep(1);
 	LOGI("LoginServer listen on %s:%d", m_ip.c_str(), m_port);
-    TcpService::StartServer(m_ip, m_port);
-	PollStart();
+    tcpService_.listen(m_ip, m_port);
+	tcpService_.run();
+}
+
+void LoginServer::onEvent(int fd, ConnectionEvent event)
+{
+	if (event == Disconnected) {
+		m_pNode->setNodeDisconnect(fd);
+		tcpService_.closeSocket(fd);
+	}
 }
 
 extern int total_recv_pkt;
 extern int total_user_login;
 
-void LoginServer::OnRecv(int sockfd, PDUBase* base) {
+void LoginServer::onData(int sockfd, PDUBase* base) {
 	
 	SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
 	int cmd = base->command_id;
@@ -102,15 +106,6 @@ void LoginServer::OnRecv(int sockfd, PDUBase* base) {
 		break;
 	}
 	delete base;
-}
-
-void LoginServer::OnConn(int sockfd) {
-    //LOGD("建立连接fd:%d", sockfd);
-}
-
-void LoginServer::OnDisconn(int sockfd) {
-	m_pNode->setNodeDisconnect(sockfd);
-	CloseFd(sockfd);
 }
 
 void LoginServer::ProcessClientMsg(int sockfd, SPDUBase* base)

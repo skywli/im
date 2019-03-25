@@ -1,7 +1,7 @@
 #ifndef _CONNECTION_H
 #define _CONNECTION_H
 
-#include "pdu_base.h"
+#include "common/proto/pdu_base.h"
 #include <im_queue.h>
 #define RECV_BUF_LEN          16*1024
 

@@ -1,20 +1,19 @@
 
 #ifndef _MONITOR_SERVICE_H
 #define _MONITOR_SERVICE_H
-
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include <string>
-#include<tcp_service.h>
 #include <monitor.h>
 
-class MonitorServer:public TcpService  {
+class MonitorServer:public Instance  {
 public:
 	MonitorServer();
 	int init();
 	int start();
 
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
-	virtual void OnConn(int _sockfd);
-	virtual void OnDisconn(int _sockfd);
+	virtual void onData(int _sockfd, PDUBase* _base);
+	virtual void onEvent(int fd, ConnectionEvent event);
 	
 	int clusterStatus(int sockfd, SPDUBase& base);
 	int configSet(int sockfd, SPDUBase& base);
@@ -39,11 +38,9 @@ private:
 	std::string               m_ip;
 	int                       m_port;
 	Monitor                   m_monitor;
-	TcpService*                m_server;
-    SdEventLoop*               m_loop;
-
-
-
+	SdEventLoop*               loop_;
+	TcpService                  tcpService_;
+  
 };
 
 #endif

@@ -47,12 +47,13 @@ ServiceNode::ServiceNode(int sid)
 
 ServiceNode::~ServiceNode()
 {
+	delete tcpService_;
 }
 int ServiceNode::init(NodeMgr * manager, SdEventLoop* loop)
 {
-	m_loop = loop;
+	loop_ = loop;
 	m_pNodeMgr = manager;
-	TcpService::init(loop);
+	tcpService_=new TcpService(this,loop);
 	this->init();
 	return 0;
 }
@@ -70,7 +71,6 @@ Node* ServiceNode::addNode(uint32_t sid, uint32_t nid)
 		return NULL;
 	}
 	else {
-		
 		Node* node = new Node(sid,nid);
 		if ( node) {
 			m_nodes.push_back(node);
@@ -87,7 +87,7 @@ int ServiceNode::delNode(uint32_t nid)
 	while (it != m_nodes.end()) {
 		if ((*it)->getNodeId() == nid) {
 			if ((*it)->getState() > NODE_CONNECT) {
-				CloseFd((*it)->getsock());
+				tcpService_->closeSocket((*it)->getsock());
 			}
 			delete *it;
 			m_nodes.erase(it);
@@ -100,12 +100,12 @@ int ServiceNode::delNode(uint32_t nid)
 
 int ServiceNode::connect(const char * ip, uint16_t port, int type)
 {
-	return StartClient(ip, port);
+	return tcpService_->connect(ip, port);
 }
 
 int ServiceNode::close(int fd)
 {
-	CloseFd(fd);
+	tcpService_->closeSocket(fd);
 }
 
 int ServiceNode::randomGetNodeSock()
@@ -188,7 +188,7 @@ void ServiceNode::heartBeat() {
 			if (node->ping_time && //we alread ping
 				now - node->ping_time > PING_RRT_TIME) {//waiting for pong timeout
 				LOGE("time out recv pong,close sock");
-				CloseFd(node->getsock());
+				tcpService_->closeSocket(node->getsock());
 				node->setState(NODE_CONNECT);
 			}
 		}
@@ -219,7 +219,7 @@ bool ServiceNode::authenticationReq(Node * node)
 	req.set_node_id(cur_nid);
 	SPDUBase spdu;
 	spdu.ResetPackBody(req, CID_S2S_AUTHENTICATION_REQ);
-	Send(node->getsock(), spdu);
+	tcpService_->Send(node->getsock(), spdu);
 	node->setState(NODE_AUTH);
 	node->auth_time = time(0);
 	return true;
@@ -277,7 +277,7 @@ bool ServiceNode::ping(Node * node) {
 	spdu.ResetPackBody(req, CID_S2S_PING);
 	node->ping_time = time(0);
 	//LOGD("ping node[sid:%s,nid:%d,fd:%d]",sidName(node->getSid()),node->getNid(),node->getsock());
-	Send(node->getsock(), spdu);
+	tcpService_->Send(node->getsock(), spdu);
 }
 
 bool ServiceNode::pong(int sockfd, SPDUBase& base)
@@ -368,7 +368,7 @@ int ServiceNode::sendNode(int nid, SPDUBase & base)
 	while (it != m_nodes.end()) {
 		if ((*it)->getNodeId() == nid) {
 			if ((*it)->getState() == NODE_ABLE) {
-				return Send((*it)->getsock(), base);
+				return tcpService_->Send((*it)->getsock(), base);
 			}
 		}
 		++it;
@@ -383,7 +383,7 @@ int ServiceNode::sendRandomSid(SPDUBase & base)
 	auto it = m_nodes.begin();
 	while (it != m_nodes.end()) {
 		if ((*it)->getState() == NODE_ABLE) {
-			return Send((*it)->getsock(), base);
+			return tcpService_->Send((*it)->getsock(), base);
 		}
 		++it;
 	}
@@ -397,7 +397,7 @@ int ServiceNode::sendSid(SPDUBase & base)
 	auto it = m_nodes.begin();
 	while (it != m_nodes.end()) {
 		if ((*it)->getState() == NODE_ABLE) {
-			return Send((*it)->getsock(), base);
+			return tcpService_->Send((*it)->getsock(), base);
 		}
 		++it;
 	}
@@ -412,7 +412,7 @@ int ServiceNode::sendsock(int sockfd, SPDUBase & base)
 	while (it != m_nodes.end()) {
 		if ((*it)->getsock() == sockfd) {
 			if ((*it)->getState() == NODE_ABLE) {
-				return Send(sockfd, base);
+				return tcpService_->Send(sockfd, base);
 			}
 		}
 		++it;
@@ -433,39 +433,37 @@ void ServiceNode::setNodeState()
 }
 
 
-void ServiceNode::OnRecv(int sockfd, PDUBase * base)
+void ServiceNode::onData(int sockfd, PDUBase * base)
 {
 	SPDUBase* spdu = dynamic_cast<SPDUBase*>(base);
 	handler(sockfd, *spdu);
 }
 
-void ServiceNode::OnConn(int sockfd)
+void ServiceNode::onEvent(int fd, ConnectionEvent event)
 {
+	if (event == Disconnected) {
+		std::list<Node*>::iterator it = m_nodes.begin();
+		while (it != m_nodes.end()) {
+			Node* pNode = *it;
+			if (fd == pNode->getsock()) {
+				LOGE("node[sid:%s,node_id:%d] disconnect", sidName(pNode->getSid()), pNode->getNid());
+				pNode->clear();
+				pNode->setState(NODE_CONNECT);
+				NodeConnectedState* state = new NodeConnectedState;
+				state->sockfd = fd;
+				state->state = SOCK_CLOSE;
+				state->sid = pNode->getSid();
+				state->nid = pNode->getNid();
+				m_pNodeMgr->connectionStateCb(state);
+				delete state;
+				break;
+			}
+			++it;
+		}
+		tcpService_->closeSocket(fd);
+	}
 }
 
-void ServiceNode::OnDisconn(int sockfd)
-{
-	std::list<Node*>::iterator it = m_nodes.begin();
-	while (it != m_nodes.end()) {
-		Node* pNode = *it;
-		if (sockfd == pNode->getsock()) {
-			LOGE("node[sid:%s,node_id:%d] disconnect", sidName(pNode->getSid()), pNode->getNid());
-			pNode->clear();
-			pNode->setState(NODE_CONNECT);
-            NodeConnectedState* state=new NodeConnectedState;
-            state->sockfd=sockfd;
-            state->state=SOCK_CLOSE;
-            state->sid=pNode->getSid();
-            state->nid=pNode->getNid();
-			m_pNodeMgr->connectionStateCb(state);
-            delete state;
-			break;
-		}
-		++it;
-    }
-    CloseFd(sockfd);
-	
-}
 int ServiceNode::recordMsgSlot()
 {
 	for (auto nit = m_nodes.begin(); nit != m_nodes.end(); nit++) {

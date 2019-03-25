@@ -1,6 +1,6 @@
 <monitor type="monitor">
  <!-- IP and port to listen for incoming monitor connections on -->
-	<ip>192.168.0.16</ip>
+	<ip>127.0.0.1</ip>
 	<port>8802</port>
 	
 	

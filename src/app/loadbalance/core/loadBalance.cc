@@ -16,20 +16,9 @@ using namespace com::proto::loadbalance;
 using namespace com::proto::server;
 
 
-LoadBalanceServer::LoadBalanceServer() {
+LoadBalanceServer::LoadBalanceServer() :loop_(getEventLoop()), tcpService_(this, loop_) {
 	index_ = 0;
 	m_pNode = CNode::getInstance();
-}
-
-
-void LoadBalanceServer::OnDisconn(int _sockfd) {
-	bool is_need_set_onlinestatus = false;
-
-	if (delete_loadbalance_from_list(_sockfd)) {
-		LOGE("通信服务器断开连接，sockfd:%d", _sockfd);
-		is_need_set_onlinestatus = true;
-	}
-	CloseFd(_sockfd);
 }
 
 static unsigned int dictGenHashFunction(const unsigned char *buf, int len) {
@@ -79,7 +68,7 @@ void LoadBalanceServer::AllocateLoadbalance(std::string &_ip, short &_port, cons
 	if (suit->current_balance_user_num_ > less->current_balance_user_num_ + 50) {
 		suit = less;
 	}
-		
+
 	_ip = suit->ip_;
 	_port = suit->port_;
 	LOGD("loadbalance requst ,choose server%s, %d", _ip.c_str(), _port);
@@ -93,23 +82,19 @@ int LoadBalanceServer::init()
 		LOGE("not config ip or port");
 		return -1;
 	}
-
-	m_loop = getEventLoop();
-	m_loop->init(1024);
-	TcpService::init(m_loop);
-	m_pNode->init(this);
-	return NodeMgr::getInstance()->init( m_loop, NULL, NULL);
+	m_pNode->init(&tcpService_);
+	return NodeMgr::getInstance()->init( loop_, NULL, NULL);
 }
 int LoadBalanceServer::start() {
 	LOGD("dispatch server listen on %s:%d", m_ip.c_str(), m_port);
-	if (TcpService::StartServer(m_ip, m_port) == -1) {
+	if (tcpService_.listen(m_ip, m_port) == -1) {
 		LOGE("listen [ip:%s,port:%d]fail", m_ip.c_str(), m_port);
 		return -1;
 	}
-	PollStart();
+	tcpService_.run();
 	return 0;
 }
-void LoadBalanceServer::OnRecv(int _sockfd, PDUBase* _base) {
+void LoadBalanceServer::onData(int _sockfd, PDUBase* _base) {
 	//printf("recv cmd:%d\n",_base.command_id);
 	SPDUBase* spdu = dynamic_cast<SPDUBase*>(_base);
 	switch (_base->command_id) {
@@ -129,10 +114,17 @@ void LoadBalanceServer::OnRecv(int _sockfd, PDUBase* _base) {
 	delete _base;
 }
 
-
-void LoadBalanceServer::OnConn(int _sockfd)
+void LoadBalanceServer::onEvent(int fd, ConnectionEvent event)
 {
+	if (event == Disconnected) {
+		bool is_need_set_onlinestatus = false;
 
+		if (delete_loadbalance_from_list(fd)) {
+			LOGE("通信服务器断开连接，sockfd:%d", fd);
+			is_need_set_onlinestatus = true;
+		}
+		tcpService_.closeSocket(fd);
+	}
 }
 
 void LoadBalanceServer::ProcessRegistService(int _sockfd, SPDUBase &_pack) {

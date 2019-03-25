@@ -3,7 +3,7 @@
 
 #include <string>
 #include <mutex>
-#include "pdu_util.h"
+#include "common/proto/pdu_util.h"
 #include <google/protobuf/message.h>
 
 class BlockTcpClient:public PduUtil {

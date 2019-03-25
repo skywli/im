@@ -3,16 +3,16 @@
 	 <!-- IP/port the monitor is waiting for connections on -->
 	<monitor_ip>127.0.0.1</monitor_ip>
 	<monitor_port>8802</monitor_port>
-	<redis_ip>192.168.0.16</redis_ip>
-	<redis_port>6380</redis_port>
+	<redis_ip>127.0.0.1</redis_ip>
+	<redis_port>6379</redis_port>
     <!-- use as msg queue  for storaging im msg-->
-    <msg_queue_ip>192.168.0.16</msg_queue_ip>
-    <msg_queue_port>6380</msg_queue_port>
-    <msg_queue_auth>ym1234</msg_queue_auth>
+    <msg_queue_ip>127.0.0.1</msg_queue_ip>
+    <msg_queue_port>6379</msg_queue_port>
+    <msg_queue_auth>123456</msg_queue_auth>
 	
     <!--	<dbproxy_ip>192.168.0.66</dbproxy_ip>-->
 	<dbproxy_port>8890</dbproxy_port>
-    <redis_auth>ym1234</redis_auth>
+    <redis_auth>123456</redis_auth>
 	  <!-- IP and port to listen for incoming msg connections on -->
 	<ip>127.0.0.1</ip>
 	<port>8060</port>

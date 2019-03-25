@@ -170,6 +170,7 @@ int main(int argc, char *argv[]) {
   //  count_thread.detach();
 
 	conn_server.start();
+	LOGE("server start fail");
 
     return 0;
 }

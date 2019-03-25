@@ -1,13 +1,13 @@
 
 #ifndef _DISPATCH_SERVICE_H
 #define _DISPATCH_SERVICE_H
-
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include <string>
-#include<tcp_service.h>
 #include <list>
 #include <define.h>
 #include <cnode.h>
-class DispatchServer:public TcpService  {
+class DispatchServer:public Instance  {
 
 	//who connect me
 private:
@@ -36,9 +36,8 @@ public:
 	void reportOnliners();
 	int start();
 
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
-	virtual void OnConn(int _sockfd);
-	virtual void OnDisconn(int _sockfd);
+	virtual void onData(int _sockfd, PDUBase* _base);
+	void onEvent(int _sockfd, ConnectionEvent event);
 	static void connectionStateEvent(int sockfd, int state, int sid, int nid, void * arg);
 	int getsock(int cmd,int user_id);
 	int registCmdReq(int sockfd, SPDUBase& base);
@@ -71,10 +70,10 @@ private:
 	std::string                         m_ip;
 	int                                 m_port;
 	
-	TcpService*                          m_server;
+	SdEventLoop*                        loop_;
+	TcpService                         tcpService_;
 //	std::list<Node*>                    m_nodes;//dispatch client
 	std::map<int, int>                  m_cmd_map;// cmd-sid
-	SdEventLoop*                        m_loop;
 	 
 	std::map<int, std::list<Node*>>      m_services;
 	CNode*                                m_pNode;

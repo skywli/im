@@ -1,10 +1,12 @@
 #ifndef _BRAODCAST_H_
 #define _BRAODCAST_H_
-#include <httpServer.h>
-#include <transfer_client.h>
+
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
+#include "common/network/http_server.h"
 #include <redis_client.h>
 #include <json/json.h>
-#include <tcp_service.h>
+
 typedef ::google::protobuf::RepeatedField< ::google::protobuf::int32 >  google_list_u32;
 enum SendType {
 	ST_ALL_USER=0,
@@ -20,13 +22,12 @@ struct User {
 	short          sdkChannel;
 
 };
-class BroadcastServer :public HttpServer,TcpService{
+class BroadcastServer :public HttpServer,Instance{
 public:
 	BroadcastServer();
 	~BroadcastServer();
 	virtual void OnRecv(int _sockfd, PDUBase* _base);
-	virtual void OnConn(int _sockfd);
-	virtual void OnDisconn(int _sockfd);
+	virtual void onEvent(int fd, ConnectionEvent event);
 	void SyncUserData(std::list<std::string>& _keys);
 	void InitIMUserList();
 	int ReSyncUserData();
@@ -56,7 +57,8 @@ private:
 	std::map<std::string, User*>   m_user_map;
 	std::string                    m_ip;
 	short                          m_port;
-	SdEventLoop*                        m_loop;
+	SdEventLoop*                        loop_;
+	TcpService                         tcpService_;
 };
 
 #endif

@@ -2,8 +2,7 @@
 #define _CONNECTION_SERVER_H
 
 #include "IM.Buddy.pb.h"
-#include "tcp_service.h"
-#include "block_tcp_client.h"
+#include "common/network/tcp_service.h"
 #include <google/protobuf/message.h>
 #include <list>
 #include <string>
@@ -21,6 +20,7 @@
 
 #include <IM.Redis.pb.h>
 #include <IM.Group.pb.h>
+#include "common/core/instance.h"
 #define VERSION_0                   0    //sdk         
 #define VERSION_1                   1    //bulik msg not ack
 #define MSG_ACK_TIME                  6
@@ -70,7 +70,7 @@ namespace group {
 		std::list<User*>  user_list_;
 
 	};
-	class GroupServer :public TcpService {
+	class GroupServer :public Instance {
 	public:
 
 		int sendConn(SPDUBase & base);
@@ -80,13 +80,10 @@ namespace group {
 		int initCmdTable();
 		void start();
 
-
-
 		void registCmd(int sid, int nid);
 
-		virtual void OnRecv(int _sockfd, PDUBase* _base);
-		virtual void OnConn(int _sockfd);
-		virtual void OnDisconn(int _sockfd);
+		virtual void onData(int _sockfd, PDUBase* _base);
+		void onEvent(int _sockfd, ConnectionEvent event);
 
 		int processInnerMsg(int sockfd, SPDUBase & base);
 
@@ -202,7 +199,7 @@ namespace group {
 		MsgProcess                  m_chat_msg_process;
 
 		//	MsgProcess                 m_common_msg_process;
-		SdEventLoop*                m_loop;
+		SdEventLoop*                loop_;
 
 		UserCache                  m_user_cache;
 
@@ -219,6 +216,8 @@ namespace group {
 
 		std::recursive_mutex       m_msglock;
 		std::map<uint32_t, std::list<MHandler*>> m_msgHandler;
+
+		TcpService                 tcpService_;
 };
 }
 #endif

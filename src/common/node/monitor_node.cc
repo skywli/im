@@ -196,7 +196,7 @@ int MonitorNode::regist( Node* node)
     register_server.set_service_type(m_cur_sid);
     SPDUBase pdu;
     pdu.ResetPackBody(register_server, CID_MONITOR_CLIENT_REGISTER_REQ);
-    Send(node->getsock(), pdu);
+	tcpService_->Send(node->getsock(), pdu);
     node->setState(NODE_REGIST);
     node->regist_time = time(0);
     return 0;

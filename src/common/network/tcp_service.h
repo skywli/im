@@ -1,15 +1,14 @@
 #ifndef _TCP_SERVER_H
 #define _TCP_SERVER_H
 
-#include "pdu_base.h"
-#include "pdu_util.h"
+#include  "common/proto/pdu_util.h"
 #include "connection.h"
 #include <unordered_map>
 #include <mutex>
 #include <map>
-#include <sd_event_loop.h>
-#include<pdu_util.h>
-
+#include "common/event/sd_event_loop.h"
+#include  "common/proto/pdu_base.h"
+#include "common/core/instance.h"
 #define TCP_MAX_BUFF 51200
 #define MAX_EVENTS 100
 #define TIMEOUT_INTERVAL 100
@@ -22,18 +21,13 @@
 class TcpService:public PduUtil {
 public:
 	
-	TcpService();
+	TcpService(Instance* instance, SdEventLoop * loop);
+	~TcpService();
     int getConnectNum();
-    virtual ~TcpService();
-	int init(SdEventLoop * loop);
-	virtual void OnRecv(int _sockfd, PDUBase* _base) = 0;
-    virtual void OnConn(int _sockfd) = 0;
-    virtual void OnDisconn(int _sockfd) = 0;
-  
-
-    virtual int StartServer(std::string _ip, short _port);
+   
+    int listen(std::string _ip, short _port);
 	
-	int StartClient(std::string _ip, short _port);
+	int connect(std::string _ip, short _port);
 	long long  CreateTimer(long long milliseconds, sdTimeProc * proc, void * clientData);
     void delEvent(int fd,int mask);
 
@@ -41,8 +35,9 @@ public:
 	int Send(int _sockfd, const char *buffer, int length);
 
 	int Send(int _sockfd, msg_t _msg, int _length);
-	void CloseFd(int _sockfd);
+	void closeSocket(int _sockfd);
 	void stop();
+	void run();
 public:
     int epollfd_;
     int listen_sockfd_;
@@ -54,8 +49,6 @@ protected:
 
     std::mutex send_mutex;
 
-    void PollStart();
-	
 	void Accept(int _sockfd);
   
     void write(Connection* conn);
@@ -65,7 +58,7 @@ protected:
     void close_cb(int _sockfd);
     int read_cb(int _sockfd, struct epoll_event &_ev);
 
-	virtual void parse(Connection * conn);
+    void parse(Connection * conn);
 
     void setlinger(int _sockfd);
     void setreuse(int _sockfd);
@@ -79,9 +72,10 @@ private:
 	static  void accept_cb(int fd, short mask,void* privdata);
 	static void read_cb(int fd, short mask, void* privdata);
 private:
-	SdEventLoop*  m_loop;
+	SdEventLoop*  loop_;
 	std::map<int, Connection*> m_conns;
 	std::recursive_mutex       m_ev_mutex;
+	Instance*        instance_;
 };
 
 #endif

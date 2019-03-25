@@ -58,7 +58,7 @@ int NodeMgr::init( SdEventLoop* loop, dispatch cb, void* data)
 {
 	m_dispatch = cb;
 	m_privdata = data;
-	m_loop = loop;
+	loop_ = loop;
 	//TcpService::init(loop);
 	TiXmlElement *root = ConfigFileReader::getInstance()->getRoot();
 	TiXmlElement* child;
@@ -80,10 +80,10 @@ int NodeMgr::init( SdEventLoop* loop, dispatch cb, void* data)
 		snode = CreateServiceNode(getSid(*it));
 		if(snode){
 	            m_serviceNode[i++]=snode;
-		    snode->init(this, m_loop);
+		    snode->init(this, loop_);
 		}
 	}
-	m_loop->createTimeEvent(1000, Timer, this);
+	loop_->createTimeEvent(1000, Timer, this);
 	return 0;
 }
 
@@ -289,7 +289,7 @@ int NodeMgr::sendsock(int sid, int sockfd, SPDUBase & base)
 
 void NodeMgr::stop()
 {
-	m_loop->stop();
+	loop_->stop();
 }
 
 void NodeMgr::cron()

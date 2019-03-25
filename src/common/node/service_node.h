@@ -2,13 +2,13 @@
 #define _SERVICENODE_H
 
 #include <node.h>
-#include <tcp_service.h>
+#include "common/network/tcp_service.h"
 #include <list>
 #include <mutex>
 #include <node_mgr.h>
+#include "common/core/instance.h"
 
-
-class ServiceNode:public TcpService {
+class ServiceNode:public Instance {
 public:
 	ServiceNode();
 	ServiceNode(int   sid);
@@ -46,9 +46,8 @@ public:
 	virtual int init();
 
 public:
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
-	virtual void OnConn(int _sockfd);
-	virtual void OnDisconn(int _sockfd);
+	virtual void onData(int _sockfd, PDUBase* _base);
+	virtual void onEvent(int _sockfd, ConnectionEvent event);
 
 	int recordMsgSlot();
 
@@ -63,7 +62,7 @@ private:
 	bool authenticationRsp(int sockfd, SPDUBase & base);
 	bool ping(Node*);
 	bool pong(int sockfd, SPDUBase & base);
-
+	
 protected:
 
 	int                            m_sid;
@@ -71,16 +70,13 @@ protected:
 	std::list<Node*>               m_nodes;
 	std::recursive_mutex           m_nodes_mutex;
 	long long                      m_epoch;
+	TcpService*                     tcpService_;
 private:
-	SdEventLoop*                   m_loop;
+	SdEventLoop*                   loop_;
 //	TcpService*                     m_pNet;
 	Node*                          msg_slots[CLUSTER_SLOTS];
 	
 	
-
-
-	
-
 };
 
 ServiceNode* CreateServiceNode(uint32_t sid);

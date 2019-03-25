@@ -1,11 +1,11 @@
 
 #ifndef _CONNECTION_SERVICE_H
 #define _CONNECTION_SERVICE_H
-
+#include "common/network/tcp_service.h"
+#include "common/core/instance.h"
 #include <list>
 #include <string>
-#include <msg_service.h>
-#include <tcp_service.h>
+#include "msg_service.h"
 #include <node_mgr.h>
 
 
@@ -13,7 +13,7 @@
 #define     CLIENT_OFFLINE      2
 
 
-class ConnService:public TcpService  {
+class ConnService:public Instance  {
 public:
 	ConnService();
 	int init();
@@ -22,14 +22,14 @@ public:
 	void setNodeId(int node_id);
 
 	int recvBusiMsg(int sockfd, PDUBase& _data);
-	virtual void OnRecv(int _sockfd, PDUBase* _base);
-	virtual void OnConn(int _sockfd);
-	virtual void OnDisconn(int _sockfd);
+	virtual void onData(int _sockfd, PDUBase* _base);
+	virtual void onEvent(int fd, ConnectionEvent event);
 	void parse(Connection * conn);
 	int deleteClient(int _user_id);
 
 private:
-	
+	void onConnnect(int fd);
+	void onDisconnnect(int fd);
 	static void Timer(int fd, short mask, void * privdata);
 	void reportOnliners();
 	void count(int cmd);
@@ -47,7 +47,8 @@ private:
 	// 本服务器的ip和端口
 	std::string    m_ip;
 	int            m_port;
-	SdEventLoop*   m_loop;
+	SdEventLoop*   loop_;
+	TcpService                         tcpService_;
 	MsgService                 m_msgService;
 
 	int                        m_max_conn;
