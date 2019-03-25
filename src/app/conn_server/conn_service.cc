@@ -23,7 +23,9 @@ int total_send_pkt;
 #define CONF_CONN_LISTEN_IP  "listen_ip"
 #define CONF_CONN_LISTEN_PORT "listen_port"
 ConnService::ConnService() :loop_(getEventLoop()), tcpService_(this, loop_),m_msgService(loop_,this) {
+	m_max_conn = maxclients + CONFIG_FDSET_INCR;
 	loop_->init(m_max_conn);
+	m_clients = new Client[sizeof(Client)*(m_max_conn + 1)];
 	m_conns = 0;
 	m_total_pkts = 0;
 	m_total_chat_pkts=0;
@@ -37,8 +39,6 @@ int ConnService::init()
 		LOGE("not config out ip or port");
 		return -1;
 	}
-	m_max_conn = maxclients + CONFIG_FDSET_INCR;
-	m_clients = new Client[sizeof(Client)*(m_max_conn+1)];
 	loop_->createTimeEvent(5000, Timer, this);
 	return m_msgService.init();
 }
@@ -317,7 +317,7 @@ void ConnService::statistic()
 	static long long last_chat_msg_pkts = 0;
 	static long long last_total_pkts = 0;
 	if (loop & 1) {
-		LOGI("recv msg rate -------chat msg:%d pkts/10sec----------- total msg:%d pkts/10sec", m_total_chat_pkts - last_chat_msg_pkts, m_total_pkts - last_total_pkts);
+		//LOGI("recv msg rate -------chat msg:%d pkts/10sec----------- total msg:%d pkts/10sec", m_total_chat_pkts - last_chat_msg_pkts, m_total_pkts - last_total_pkts);
 		last_chat_msg_pkts = m_total_chat_pkts;
 		last_total_pkts = m_total_pkts;
 	}

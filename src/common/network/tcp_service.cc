@@ -161,9 +161,9 @@ void TcpService::read_cb(int fd, short mask, void* privdata) {
     }
 }
 
-TcpService::TcpService(Instance* instance, SdEventLoop * loop):instance_(instance) {
+TcpService::TcpService(Instance* instance, SdEventLoop * loop)
+	:instance_(instance),loop_(loop) {
     listen_num = 1;
-	loop_ = loop;
 }
 
 TcpService::~TcpService() {
